@@ -1,0 +1,5 @@
+{
+    "sketch": "Examples\\Oscillators\\Oscillators.ino",
+    "configuration": "flash=4194304_0,arch=arm,freq=150,opt=Small,profile=Disabled,rtti=Disabled,stackprotect=Disabled,exceptions=Disabled,dbgport=Disabled,dbglvl=None,usbstack=picosdk,ipbtstack=ipv4only,uploadmethod=default",
+    "board": "rp2040:rp2040:rpipico2"
+}
