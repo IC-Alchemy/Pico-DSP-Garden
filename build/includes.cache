@@ -1,0 +1,37 @@
+[
+  {
+    "Sourcefile": null,
+    "Include": "",
+    "Includepath": "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\hardware\\rp2040\\4.5.4\\cores\\rp2040"
+  },
+  {
+    "Sourcefile": null,
+    "Include": "",
+    "Includepath": "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\hardware\\rp2040\\4.5.4\\variants\\rpipico2"
+  },
+  {
+    "Sourcefile": "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\build\\sketch\\Oscillators.ino.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\build\\sketch\\src\\audio\\audio.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\build\\sketch\\src\\audio\\audio_i2s.c",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\build\\sketch\\src\\audio\\buffer.c",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\build\\sketch\\src\\dsp\\oscillator.cpp",
+    "Include": "",
+    "Includepath": null
+  }
+]

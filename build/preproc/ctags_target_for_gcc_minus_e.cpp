@@ -1,12 +1,10 @@
-#include "src/audio/audio.h"
-#include "src/audio/audio_i2s.h"
-#include "src/dsp/oscillator.h"
+# 1 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\Oscillators\\Oscillators.ino"
+# 2 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\Oscillators\\Oscillators.ino" 2
+# 3 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\Oscillators\\Oscillators.ino" 2
+# 4 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\Oscillators\\Oscillators.ino" 2
 // Define the number of oscillators
-
-//  pins for the I2S audio most should work fine, but I'm using PCM510x
 int PICO_AUDIO_I2S_DATA_PIN = 15;
-int PICO_AUDIO_I2S_CLOCK_PIN_BASE = 16; //  Pico forces you to use BasePin + 1 for the LRCK so LRCK is 17
-
+int PICO_AUDIO_I2S_CLOCK_PIN_BASE = 16;
 float SAMPLE_RATE = 44100.0f;
 float INT16_MAX_AS_FLOAT = 32767.0f;
 float INT16_MIN_AS_FLOAT = -32768.0f;
@@ -105,14 +103,13 @@ void setupI2SAudio(audio_format_t *audioFormat, audio_i2s_config_t *i2sConfig)
 {
     if (!audio_i2s_setup(audioFormat, i2sConfig))
     {
-        Serial.print("audio failed ");
+        Serial.print("We are melting!!!!! ");
         delay(1000);
 
         return;
     }
     if (!audio_i2s_connect(producer_pool))
     {
-        Serial.print("audio failed ");
 
         Serial.print("We are melting!!!!! ");
         delay(1000);
@@ -131,7 +128,7 @@ void setup()
     initOscillators();
     static audio_format_t audioFormat = {
         .sample_freq = (uint32_t)SAMPLE_RATE,
-        .format = AUDIO_BUFFER_FORMAT_PCM_S16,
+        .format = 1 /*|< signed 16bit PCM*/,
         .channel_count = 2};
     static audio_buffer_format_t bufferFormat = {
         .format = &audioFormat,
@@ -165,24 +162,17 @@ void loop()
     }
 }
 
+//  Do what ever you want in this loop on the other core, they share memory.
 
 void loop1()
 {
-
-    //  Do what ever you want in this loop on the other core, they share memory.
-    // I used the code below to modify the frequency of the oscillators from the other core,
-    // it worked fine, which was a bit of a surprise.?
-
-    /*
     if (random(0,1000)<1){
 delay(100);
 change = random(13);
 for (int i = 0; i < NUM_OSCILLATORS; i++)
     {
 
-        carrier_osc[i].SetFreq(daisysp::mtof(scale[i ] + 36+change));
+        carrier_osc[i].SetFreq(daisysp::mtof(scale[i*2 ] + 36+change));
 
+    }
 }}
-
-    */
-}

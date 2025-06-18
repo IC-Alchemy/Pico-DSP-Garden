@@ -1,12 +1,11 @@
+#include <Arduino.h>
+#line 1 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\Oscillators\\Oscillators.ino"
 #include "src/audio/audio.h"
 #include "src/audio/audio_i2s.h"
 #include "src/dsp/oscillator.h"
 // Define the number of oscillators
-
-//  pins for the I2S audio most should work fine, but I'm using PCM510x
 int PICO_AUDIO_I2S_DATA_PIN = 15;
-int PICO_AUDIO_I2S_CLOCK_PIN_BASE = 16; //  Pico forces you to use BasePin + 1 for the LRCK so LRCK is 17
-
+int PICO_AUDIO_I2S_CLOCK_PIN_BASE = 16;
 float SAMPLE_RATE = 44100.0f;
 float INT16_MAX_AS_FLOAT = 32767.0f;
 float INT16_MIN_AS_FLOAT = -32768.0f;
@@ -27,6 +26,23 @@ int scale[48] = {
     39, 39, 41, 41, 43, 43, 46, 46, 48, 48, 51, 53, 53, 53, 53, 53};
 
 int change = 1;
+#line 27 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\Oscillators\\Oscillators.ino"
+void initOscillators();
+#line 52 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\Oscillators\\Oscillators.ino"
+static int16_t convertSampleToInt16(float sample);
+#line 60 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\Oscillators\\Oscillators.ino"
+void fill_audio_buffer(audio_buffer_t *buffer);
+#line 101 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\Oscillators\\Oscillators.ino"
+void setupI2SAudio(audio_format_t *audioFormat, audio_i2s_config_t *i2sConfig);
+#line 124 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\Oscillators\\Oscillators.ino"
+void setup();
+#line 143 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\Oscillators\\Oscillators.ino"
+void setup1();
+#line 154 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\Oscillators\\Oscillators.ino"
+void loop();
+#line 166 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\Oscillators\\Oscillators.ino"
+void loop1();
+#line 27 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\Oscillators\\Oscillators.ino"
 void initOscillators()
 {
 
@@ -105,14 +121,13 @@ void setupI2SAudio(audio_format_t *audioFormat, audio_i2s_config_t *i2sConfig)
 {
     if (!audio_i2s_setup(audioFormat, i2sConfig))
     {
-        Serial.print("audio failed ");
+        Serial.print("We are melting!!!!! ");
         delay(1000);
 
         return;
     }
     if (!audio_i2s_connect(producer_pool))
     {
-        Serial.print("audio failed ");
 
         Serial.print("We are melting!!!!! ");
         delay(1000);
@@ -165,24 +180,17 @@ void loop()
     }
 }
 
+//  Do what ever you want in this loop on the other core, they share memory.
 
 void loop1()
 {
-
-    //  Do what ever you want in this loop on the other core, they share memory.
-    // I used the code below to modify the frequency of the oscillators from the other core,
-    // it worked fine, which was a bit of a surprise.?
-
-    /*
     if (random(0,1000)<1){
 delay(100);
 change = random(13);
 for (int i = 0; i < NUM_OSCILLATORS; i++)
     {
 
-        carrier_osc[i].SetFreq(daisysp::mtof(scale[i ] + 36+change));
+        carrier_osc[i].SetFreq(daisysp::mtof(scale[i*2 ] + 36+change));
 
+    }
 }}
-
-    */
-}
