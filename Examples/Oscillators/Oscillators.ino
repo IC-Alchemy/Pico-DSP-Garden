@@ -1,4 +1,3 @@
-#include "SuperSaw.h" // Include the Hypersaw class definition
 #include "src/audio/audio.h"
 #include "src/audio/audio_i2s.h"
 #include "src/dsp/oscillator.h"
@@ -8,6 +7,7 @@
 int PICO_AUDIO_I2S_DATA_PIN = 15;
 int PICO_AUDIO_I2S_CLOCK_PIN_BASE = 16; //  Pico forces you to use BasePin + 1 for the LRCK so LRCK is 17
 
+
 float SAMPLE_RATE = 44100.0f;
 float INT16_MAX_AS_FLOAT = 32767.0f;
 float INT16_MIN_AS_FLOAT = -32768.0f;
@@ -15,60 +15,54 @@ int NUM_AUDIO_BUFFERS = 3;
 int SAMPLES_PER_BUFFER = 256;
 audio_buffer_pool_t *producer_pool = nullptr;
 
-// Hardware and Audio Configuration (remains the same)
-int PICO_AUDIO_I2S_DATA_PIN = 15;
-int PICO_AUDIO_I2S_CLOCK_PIN_BASE = 16;
-float SAMPLE_RATE = 44100.0f;
-float INT16_MAX_AS_FLOAT = 32767.0f;
-float INT16_MIN_AS_FLOAT = -32768.0f;
+const int NUM_OSCILLATORS = 12;
+// Arrays for our carrier oscillators and LFOs
+daisysp::Oscillator carrier_osc[NUM_OSCILLATORS];
+daisysp::Oscillator lfo_mod[NUM_OSCILLATORS];
+    const float lfo_min_freq = 0.011f;
+    const float lfo_max_freq = .3f;
+int scale[48] = {
+    // Pentatonic 
+    0, 0, 3, 3, 5, 5, 7, 9, 10, 10, 12, 12, 15, 15, 17, 17,
+    19, 21, 22, 22, 24, 24, 27, 29, 29, 31, 32, 32, 34, 34, 36, 36,
+    39, 39, 41, 41, 43, 43, 46, 46, 48, 48, 51, 53, 53, 53, 53, 53};
 
-// Create an instance of our Hypersaw oscillator
-daisysp::Hypersaw hypersaw;
-
-// We'll use two LFOs to modulate the Hypersaw's parameters
-daisysp::Oscillator lfo_detune;
-daisysp::Oscillator lfo_mix;
-
-// --- Scale for Arpeggiation ---
-int scale[24] = {
-    // Pentatonic Minor
-    0, 3, 5, 7, 9, 10, 12, 15, 17, 19, 21, 22,
-    24, 27, 29, 31, 32, 34, 36, 39, 41, 43, 46, 48
-};
-volatile int note_index = 0; // Use volatile for core-safe access
-
-void initHypersaw()
+int change = 1;
+void initOscillators()
 {
-    // --- Initialize Hypersaw Oscillator ---
-    hypersaw.Init(SAMPLE_RATE);
-    hypersaw.SetFreq(daisysp::mtof(scale[0] + 48)); // Set initial frequency
-    hypersaw.SetAllWaveforms(daisysp::Hypersaw::WAVE_SAW); // Use saw waves
 
-    // --- Initialize LFO for Detune Modulation ---
-    lfo_detune.Init(SAMPLE_RATE);
-    lfo_detune.SetWaveform(daisysp::Oscillator::WAVE_SIN);
-    lfo_detune.SetFreq(0.1f); // Slow modulation
-    lfo_detune.SetAmp(1.0f);
+    // Loop to initialize all oscillators
+    for (int i = 0; i < NUM_OSCILLATORS; i++)
+    {
+        // --- Initialize Carrier Oscillators ---
+        carrier_osc[i].Init(SAMPLE_RATE);
+        carrier_osc[i].SetWaveform(daisysp::Oscillator::WAVE_SIN);
+        // Convert MIDI note to frequency
+        carrier_osc[i].SetFreq(daisysp::mtof(scale[i*2 ] + 56));
+        // Initial amplitude will be controlled by LFO, but we set it here for safety.
+        carrier_osc[i].SetAmp(0.5f);
 
-    // --- Initialize LFO for Mix Modulation ---
-    lfo_mix.Init(SAMPLE_RATE);
-    lfo_mix.SetWaveform(daisysp::Oscillator::WAVE_SIN);
-    lfo_mix.SetFreq(0.07f); // Even slower modulation
-    lfo_mix.SetAmp(1.0f);
+        // --- Initialize LFO Modulators ---
+        lfo_mod[i].Init(SAMPLE_RATE);
+        lfo_mod[i].SetWaveform(daisysp::Oscillator::WAVE_SIN);
+        // Linearly distribute LFO frequencies from min to max
+        float lfo_freq = lfo_min_freq + (static_cast<float>(i) / (NUM_OSCILLATORS - 1)) * (lfo_max_freq - lfo_min_freq);
+        lfo_mod[i].SetFreq(lfo_freq);
+        // LFO amplitude is 1.0 so its output is a full [-1.0, 1.0]
+        lfo_mod[i].SetAmp(1.0f);
+    }
 }
-
-// --- Audio Buffer Conversion (remains the same) ---
+// --- Audio Buffer Conversion ---
 static inline int16_t convertSampleToInt16(float sample)
 {
     float scaled = sample * INT16_MAX_AS_FLOAT;
     scaled = roundf(scaled);
-    // Use fclamp from DaisySP for clamping
     scaled = daisysp::fclamp(scaled, INT16_MIN_AS_FLOAT, INT16_MAX_AS_FLOAT);
     return static_cast<int16_t>(scaled);
 }
 
 
-
+/// AUDIO LOOP
 void fill_audio_buffer(audio_buffer_t *buffer)
 {
     int N = buffer->max_sample_count;
@@ -77,23 +71,30 @@ void fill_audio_buffer(audio_buffer_t *buffer)
     for (int i = 0; i < N; ++i)
     {
 
-        // 1. Process LFOs to get modulation values
-        float lfo_detune_out = lfo_detune.Process(); // -1.0 to 1.0
-        float lfo_mix_out = lfo_mix.Process();       // -1.0 to 1.0
+        float mixed_signal = 0.f;
 
-        // 2. Remap LFO outputs to the [0.0, 1.0] range for Hypersaw parameters
-        float detune_mod = (lfo_detune_out + 1.0f) * 0.5f;
-        float mix_mod = (lfo_mix_out + 1.0f) * 0.5f;      
+        // Process and sum all 16 oscillators
+        for (int j = 0; j < NUM_OSCILLATORS; j++)
+        {
+            // Get the LFO value, which is in the range [-1.0, 1.0]
+            float lfo_out = lfo_mod[j].Process();
 
-        // 3. Set the Hypersaw parameters based on the LFOs
-        hypersaw.SetDetune(detune_mod);
-        hypersaw.SetMix(mix_mod);
+            // Remap the LFO output to the range [0.0, 1.0] for amplitude control
+            // (lfo_out + 1) / 2 moves [-1, 1] to [0, 2] and then to [0, 1]
+            float amp_mod = (lfo_out + 1.0f) * 0.5f;
 
-        // 4. Get the final signal from the Hypersaw oscillator
-        float mixed_signal = hypersaw.Process();
+            // Set the carrier oscillator's amplitude to the LFO's value
+            carrier_osc[j].SetAmp(amp_mod);
 
-      
-        mixed_signal *= 0.8f;
+            // Get the carrier's signal and add it to our mix
+            mixed_signal += carrier_osc[j].Process();
+        }
+
+        // Attenuate the mixed signal to prevent clipping by dividing by the number of oscillators.
+        // This is a simple but effective mixing strategy.
+        mixed_signal *= 0.25f;
+
+        // Set the left and right output channels to the final mixed signal
 
         out[2 * i + 0] = convertSampleToInt16(mixed_signal);
         out[2 * i + 1] = convertSampleToInt16(mixed_signal);
@@ -101,19 +102,6 @@ void fill_audio_buffer(audio_buffer_t *buffer)
 
     buffer->sample_count = N;
 }
-
-
-// --- Main Application Logic for Core 1 ---
-void loop1()
-{
-    // This loop on the second core will change the note every second.
-    // This demonstrates controlling the audio engine from another thread.
-    hypersaw.SetFreq(daisysp::mtof(scale[note_index] + 48));
-    note_index = (note_index + 1) % 24; // Cycle through the scale
-    sleep_ms(1000);
-}
-
-
 
 // --- Audio I2S Setup ---
 void setupI2SAudio(audio_format_t *audioFormat, audio_i2s_config_t *i2sConfig)
@@ -159,7 +147,17 @@ void setup()
         .pio_sm = 0};
     setupI2SAudio(&audioFormat, &i2sConfig);
 }
+void setup1()
+{
+    delay(100);
 
+    Serial.begin(115200);
+    Serial.print("[CORE1] Setup starting... ");
+    Serial.print("SAMPLE_RATE: ");
+    Serial.println(SAMPLE_RATE);
+}
+
+// --- Audio Loop (Core0) ---
 void loop()
 {
     audio_buffer_t *buf = take_audio_buffer(producer_pool, true);
@@ -170,10 +168,10 @@ void loop()
     }
 }
 
+
 void loop1()
 {
 
     //  Do what ever you want in this loop on the other core, they share memory.
-
-  
+   
 }

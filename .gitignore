@@ -40,3 +40,6 @@ Examples/Oscillators/build/
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
+.github/prompts/promps.prompt.md
+.gitignore
+.github/chatmodes/mode.chatmode.md

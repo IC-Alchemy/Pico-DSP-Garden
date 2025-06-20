@@ -3,7 +3,7 @@
     "configurations": [
         {
             "name": "Arduino",
-            "compilerPath": "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\tools\\pqt-gcc\\4.0.1-8ec9d6f\\bin\\arm-none-eabi-g++",
+            "compilerPath": "C:/Users/Blasto/AppData/Local/Arduino15/packages/rp2040/tools/pqt-gcc/4.0.1-8ec9d6f/bin/arm-none-eabi-g++",
             "compilerArgs": [
                 "-I",
                 "-Werror=return-type",
