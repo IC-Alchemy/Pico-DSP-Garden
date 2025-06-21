@@ -8,7 +8,7 @@
 namespace daisysp
 {
 /** @brief Hypersaw Oscillator based on the Roland JP-8000 Super Saw.
- * @author Ben Sergent, based on research by Adam Szabo.
+ * based on research by Adam Szabo.
  * @date June 2024
  *
  * This class implements a hypersaw oscillator as detailed in Adam Szabo's paper,
