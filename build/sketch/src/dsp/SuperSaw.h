@@ -1,6 +1,7 @@
+#line 1 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\SuperSaw\\src\\dsp\\SuperSaw.h"
 #pragma once
-#ifndef HYPERSAW_H
-#define HYPERSAW_H
+#ifndef DSY_HYPERSAW_H
+#define DSY_HYPERSAW_H
 
 #include <cmath>
 #include <cstdlib>
@@ -206,4 +207,4 @@ class Hypersaw
 
 } // namespace daisysp
 
-#endif // HYPERSAW_H
+#endif // DSY_HYPERSAW_H

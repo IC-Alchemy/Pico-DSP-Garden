@@ -1,8 +1,9 @@
-# 1 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\SuperSaw\\SuperSaw.ino"
-# 2 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\SuperSaw\\SuperSaw.ino" 2
-# 3 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\SuperSaw\\SuperSaw.ino" 2
-# 4 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\SuperSaw\\SuperSaw.ino" 2
-
+#include <Arduino.h>
+#line 1 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\SuperSaw\\SuperSaw.ino"
+#include "src/dsp/SuperSaw.h" // Include the Hypersaw class definition
+#include "src/audio/audio.h"
+#include "src/audio/audio_i2s.h"
+#include "src/dsp/oscillator.h"
 // Define the number of oscillators
 
 //  pins for the I2S audio most should work fine, but I'm using PCM510x
@@ -36,6 +37,23 @@ int scale[24] = {
 };
 volatile int note_index = 0; // Use volatile for core-safe access
 
+#line 38 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\SuperSaw\\SuperSaw.ino"
+void initHypersaw();
+#line 71 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\SuperSaw\\SuperSaw.ino"
+static int16_t convertSampleToInt16(float sample);
+#line 82 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\SuperSaw\\SuperSaw.ino"
+void fill_audio_buffer(audio_buffer_t *buffer);
+#line 138 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\SuperSaw\\SuperSaw.ino"
+void setup1();
+#line 145 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\SuperSaw\\SuperSaw.ino"
+void loop1();
+#line 159 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\SuperSaw\\SuperSaw.ino"
+void setupI2SAudio(audio_format_t *audioFormat, audio_i2s_config_t *i2sConfig);
+#line 183 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\SuperSaw\\SuperSaw.ino"
+void setup();
+#line 213 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\SuperSaw\\SuperSaw.ino"
+void loop();
+#line 38 "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\Examples\\SuperSaw\\SuperSaw.ino"
 void initHypersaw()
 {
     Serial.println("Initializing Hypersaw...");
@@ -98,7 +116,7 @@ void fill_audio_buffer(audio_buffer_t *buffer)
         } else {
             // 1. Process LFOs to get modulation values
             float lfo_detune_out = lfo_detune.Process(); // -1.0 to 1.0
-            float lfo_mix_out = lfo_mix.Process(); // -1.0 to 1.0
+            float lfo_mix_out = lfo_mix.Process();       // -1.0 to 1.0
 
             // 2. Remap LFO outputs to the [0.0, 1.0] range for Hypersaw parameters
             float detune_mod = (lfo_detune_out + 1.0f) * 0.5f;
@@ -194,7 +212,7 @@ void setup()
 
     static audio_format_t audioFormat = {
         .sample_freq = (uint32_t)SAMPLE_RATE,
-        .format = 1 /*|< signed 16bit PCM*/,
+        .format = AUDIO_BUFFER_FORMAT_PCM_S16,
         .channel_count = 2};
     static audio_buffer_format_t bufferFormat = {
         .format = &audioFormat,
@@ -220,3 +238,5 @@ void loop()
         give_audio_buffer(producer_pool, buf);
     }
 }
+
+

@@ -3,7 +3,7 @@
     "configurations": [
         {
             "name": "Arduino",
-            "compilerPath": "C:/Users/Blasto/AppData/Local/Arduino15/packages/rp2040/tools/pqt-gcc/4.0.1-8ec9d6f/bin/arm-none-eabi-g++",
+            "compilerPath": "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\tools\\pqt-gcc\\4.0.1-8ec9d6f\\bin\\arm-none-eabi-g++",
             "compilerArgs": [
                 "-I",
                 "-Werror=return-type",
@@ -49,7 +49,7 @@
                 "DISABLE_FS_H_WARNING=1",
                 "ARDUINO_VARIANT=\"rpipico2\"",
                 "PICO_FLASH_SIZE_BYTES=4194304",
-                "F_CPU=150000000L",
+                "F_CPU=200000000L",
                 "ARDUINO=10607",
                 "ARDUINO_RASPBERRY_PI_PICO_2",
                 "BOARD_NAME=\"RASPBERRY_PI_PICO_2\"",
