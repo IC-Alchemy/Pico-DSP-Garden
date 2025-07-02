@@ -97,7 +97,5 @@ This project is licensed under the BSD-3-Clause License. See [LICENSE](LICENSE) 
 
 - Core audio driver based on Raspberry Pi Trading Ltd’s reference implementation.
 - DSP powered by [DaisySP](https://github.com/electro-smith/DaisySP).
-- Example algorithms and musical logic by IC-Alchemy.
-
 ---
 
