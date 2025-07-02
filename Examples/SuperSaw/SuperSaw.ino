@@ -23,7 +23,7 @@ daisysp::Hypersaw hypersaw;
 // --- Scale for Arpeggiation ---
 int scale[] = {
 
-    0, 4, 6, 10, 12, 6, 7, 12,
+    0, 3, 5, 10, 12, 6, 7, 12,
     7, 6, 7, 8, 10, 6, 4, 2,
     0, 2, 4, 6, 8, 4, 2, 0,
     7, 9, 10, 12, 6, 8, 7, 5
@@ -98,20 +98,6 @@ void setup1()
     Serial.println("[CORE1] Second core started for note progression");
 }
 
-// --- Main Application Logic for Core 1 ---
-void loop1()
-{
-    // This loop on the second core will change the note based on The Simpsons theme rhythm.
-    hypersaw.SetFreq(daisysp::mtof(scale[note_index] + 48));
-
-//  This code works fine, but it shouldn't be used in "real life"
-//  I am using a blocking delay here to show how you can actually do whatever you want
-//  in the second core.  
-
-    delay(200);
-
-    note_index = (note_index + 1) % 32; // Cycle through the scale (32 notes total)
-}
 
 
 
@@ -127,16 +113,15 @@ void setupI2SAudio(audio_format_t *audioFormat, audio_i2s_config_t *i2sConfig)
     }
     if (!audio_i2s_connect(producer_pool))
     {
-        Serial.print("audio failed ");
+        Serial.println("audio failed ");
 
-        Serial.print("We are melting!!!!! ");
         delay(1000);
 
         return;
     }
     audio_i2s_set_enabled(true);
     Serial.println("Audio is ready to go!!!!! ");
-    delay(333);
+    delay(1000);
 }
 
 // --- Arduino Setup (Core0) ---
@@ -166,10 +151,8 @@ void setup()
         .pio_sm = 0};
     setupI2SAudio(&audioFormat, &i2sConfig);
 
-    // Start the second core for note progression - THIS WAS MISSING!
-    Serial.println("Starting second core...");
 }
-
+//  Audio loop, all audio processing happens on this core leaving the other core completely free to do whatever you want
 void loop()
 {
     audio_buffer_t *buf = take_audio_buffer(producer_pool, true);
@@ -178,5 +161,18 @@ void loop()
         fill_audio_buffer(buf);
         give_audio_buffer(producer_pool, buf);
     }
+}
+// --- Main Application Logic for Core 1 ---
+void loop1()
+{
+    hypersaw.SetFreq(daisysp::mtof(scale[note_index] + 48));
+
+//  This code works fine, but it shouldn't be used in "real life"
+//  I am using a blocking delay here to show how you can actually do whatever you want
+//  in the second core.  
+
+    delay(500);
+
+    note_index = (note_index + 1) % 32; // Cycle through the scale (32 notes total)
 }
 
