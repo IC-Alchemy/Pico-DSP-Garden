@@ -96,6 +96,6 @@ This project is licensed under the BSD-3-Clause License. See [LICENSE](LICENSE) 
 ## Credits
 
 - Core audio driver based on Raspberry Pi Trading Ltd’s reference implementation.
-- DSP powered by [DaisySP](https://github.com/electro-smith/DaisySP).
+- DSP powered by Open Source Projects like [Uclock](https://github.com/midilab/uClock)[DaisySP], (https://github.com/electro-smith/DaisySP),  [Mutable Instruments](https://github.com/pichenettes/eurorack) 
 ---
 
