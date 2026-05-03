@@ -1,69 +1,65 @@
-
-
 # Pico-DSP-Garden
 
-Pico-DSP-Garden is an open-source audio DSP playground designed for the Raspberry Pi Pico2w RP2350 (and RP2040) microcontroller, leveraging dual-core programming, high-quality I2S audio output via the PCM510x DAC, and the rich DaisySP DSP library for synthesis and effects. This project aims to make it easy to prototype, experiment, and develop embedded audio applications in C++.
+**An embedded audio playground for the RP2350.**
 
-## Features
+Wire a DAC. Write a callback. Make sound.
 
-- **RP2350/RP2040 Support:** Designed for Raspberry Pi Pico boards, with explicit support for both RP2040 and RP2350.
-- **Dual-Core Programming:** Utilizes both cores—one for real-time audio processing, the other for high-level logic or UI.
-- **I2S Audio Output:** High-quality stereo audio delivered by interfacing with a PCM510x DAC over I2S, using programmable PIO and DMA for efficient streaming.
-- **DaisySP Integration:** Incorporates the DaisySP library for advanced DSP, including synthesis (e.g., oscillators, hypersaw) and effects (chorus, flanger, decimator, etc.).
-- **Flexible Architecture:** Modular codebase with example projects, buffer management, and extensible audio pipeline.
+Pico-DSP-Garden is an open-source C++ framework for building audio DSP projects on Raspberry Pi Pico2 (RP2350) and Pico (RP2040). Dual-core architecture, I2S output via PCM510x DAC, and the full DaisySP library — ready to fork, extend, and build on.
 
-## Hardware Requirements
+## What's inside
 
-- Raspberry Pi Pico, Pico W, or compatible RP2040/RP2350 board
-- PCM510x or similar I2S DAC
-- Basic audio output circuit (see examples for pinout)
-- (Optional) Buttons, pots, or other controls for interactive projects
+- **Dual-core audio engine** — Core 0 runs the real-time audio callback; Core 1 handles sequencing, UI, or whatever else needs to run without blocking audio
+- **I2S output via PCM510x DAC** — Stereo, high-quality, DMA-driven. PIO handles the timing so your callback stays clean
+- **DaisySP integration** — Full library included: HyperSaw, oscillators, chorus, flanger, decimator, LFOs, envelopes. Build complex signal chains without reinventing the DSP
+- **Modular codebase** — Audio drivers, buffer management, and example projects are separate. Pull in what you need
 
-## Repository Structure
+## Hardware
 
-- `audio/` — Core audio driver code for I2S output, buffer management, DMA, and PIO setup.
-- `DaisySP/` — Embedded DaisySP library for DSP algorithms and audio effects.
-- `Examples/` — Example sketches showing off synthesis and effects (e.g., SuperSaw, Oscillators).
-- `build/` — Build artifacts and preprocessed files (not for editing).
+- Raspberry Pi Pico or Pico W (RP2040 or RP2350)
+- PCM510x or compatible I2S DAC
+- Basic audio output circuit
 
-## Getting Started
+Default wiring (adjustable per sketch):
 
-### 1. Wiring
+| Signal | GPIO |
+|--------|------|
+| DATA   | 15   |
+| LRCK   | 16   |
+| BCLK   | 17   |
 
-Connect your Pico board to the PCM510x DAC:
+## Repository layout
 
-- DATA (e.g., GPIO 15)
-- BCLK (e.g., GPIO 17)
-- LRCK (e.g., GPIO 16)
-- Power and Ground as per your DAC
+```
+audio/      Core I2S driver — DMA, PIO, buffer management
+DaisySP/    Embedded DSP library (oscillators, effects, utilities)
+Examples/   Working sketches: SuperSaw, multi-oscillator, and more
+build/      Build artifacts (generated, not for editing)
+```
 
-Pin assignments can be customized in your sketch.
+## Getting started
 
-### 2. Build and Flash
+Clone and open an example:
 
-1. Clone the repository:
-   ```sh
-   git clone https://github.com/IC-Alchemy/Pico-DSP-Garden.git
-   ```
-2. Open the desired example in your IDE (e.g., Arduino IDE or PlatformIO).
-3. Adjust the I2S pin configuration if needed:
-   ```cpp
-   int PICO_AUDIO_I2S_DATA_PIN = 15;
-   int PICO_AUDIO_I2S_CLOCK_PIN_BASE = 16; // LRCK = 17
-   ```
-4. Build and upload to your Pico board.
+```sh
+git clone https://github.com/IC-Alchemy/Pico-DSP-Garden.git
+```
 
-### 3. Dual-Core Programming
+Open any sketch from `Examples/` in Arduino IDE or PlatformIO. Adjust the I2S pin constants if your wiring differs:
 
-This project demonstrates dual-core usage:
+```cpp
+int PICO_AUDIO_I2S_DATA_PIN = 15;
+int PICO_AUDIO_I2S_CLOCK_PIN_BASE = 16; // LRCK = 16, BCLK = 17
+```
 
-- Core 0: Runs the audio engine and main loop
-- Core 1: Handles musical logic (e.g., note progression) or other tasks
+Build and flash to your Pico.
 
-Example (from `SuperSaw.ino`):
+### Dual-core pattern
+
+Core 0 runs the audio engine. Core 1 is yours:
+
 ```cpp
 void setup1() {
-    Serial.println("[CORE1] Second core started for note progression");
+    // Second core: note progression, sensor reads, UI — nothing that blocks audio
 }
 void loop1() {
     hypersaw.SetFreq(daisysp::mtof(scale[note_index] + 48));
@@ -72,30 +68,33 @@ void loop1() {
 }
 ```
 
-### 4. DSP and Effects
+### DaisySP in the callback
 
-The DaisySP library is included for advanced DSP:
-- Add and configure oscillators, LFOs, envelopes, or effects in your audio callback
-- Example:
-  ```cpp
-  hypersaw.SetDetune(detune_mod);
-  hypersaw.SetMix(mix_mod);
-  float signal = hypersaw.Process();
-  ```
+```cpp
+hypersaw.SetDetune(detune_mod);
+hypersaw.SetMix(mix_mod);
+float signal = hypersaw.Process();
+```
 
-## Example Projects
+Add oscillators, LFOs, filters, and effects directly in the audio callback. DaisySP handles the math.
 
-- **SuperSaw:** Demonstrates a hypersaw oscillator with LFO modulation and dual-core note sequencing.
-- **Oscillators:** Shows multiple oscillator types and buffer management.
-- More in the `Examples/` folder!
+## Example projects
+
+- **SuperSaw** — HyperSaw oscillator with LFO modulation and dual-core note sequencing
+- **Oscillators** — Multiple waveform types with buffer management walkthrough
+- More in `Examples/`
 
 ## License
 
-This project is licensed under the BSD-3-Clause License. See [LICENSE](LICENSE) for details.
+BSD-3-Clause. See [LICENSE](LICENSE).
 
-## Credits
+## Built on the shoulders of
 
-- Core audio driver based on Raspberry Pi Trading Ltd’s reference implementation.
-- DSP powered by Open Source Projects like [Uclock](https://github.com/midilab/uClock)[DaisySP], (https://github.com/electro-smith/DaisySP),  [Mutable Instruments](https://github.com/pichenettes/eurorack) 
+- Audio driver based on Raspberry Pi Trading Ltd's reference I2S implementation
+- DSP by [DaisySP](https://github.com/electro-smith/DaisySP) (Electrosmith)
+- Timing by [µClock](https://github.com/midilab/uClock) (Midilab)
+- Synthesis algorithms from [Mutable Instruments](https://github.com/pichenettes/eurorack) (Émilie Gillet)
+
 ---
 
+*Part of the IC Alchemy open firmware ecosystem. Pico-DSP-Garden powers the synthesis engine in [Pico2Seq](https://github.com/IC-Alchemy/Pico2Seq).*
