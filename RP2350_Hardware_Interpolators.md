@@ -57,17 +57,11 @@ in essentially a single operation.
 This is why Raspberry Pi lists:
 
 table lookup generation
-
 quantization
-
 dithering
-
 decompression
-
 affine mapping
-
 audio operations
-
 
 among the intended applications. 
 
@@ -120,15 +114,15 @@ the savings add up.
 2. Linear Interpolation
 
 Suppose:
-
+```
 sample0
 sample1
 fraction
-
+```
 Need:
-
+```cpp
 sample0 + frac*(sample1-sample0)
-
+```
 The interpolator's blend mode was literally designed for this sort of thing.
 
 You can use it to produce weighted blends between neighboring table entries. This is useful for:
@@ -143,9 +137,9 @@ granular synthesis
 
 
 Instead of:
-
+```
 a*(1-f)+b*f
-
+```
 being done entirely in software, part of the address and fraction handling moves into hardware.
 
 
@@ -165,14 +159,14 @@ physical modeling
 
 
 Example:
-
+```
 delay = 123.456 samples
-
+```
 You need:
-
+```
 buffer[123]
 buffer[124]
-
+```
 plus interpolation.
 
 The interpolator can continuously generate the fractional read pointer.
@@ -197,15 +191,10 @@ and interpolate between samples.
 The interpolator naturally fits:
 
 phase accumulator
-
 plus
-
 integer index extraction
-
 plus
-
 fraction extraction
-
 in hardware.
 
 This is one of the strongest practical uses.
@@ -216,23 +205,22 @@ This is one of the strongest practical uses.
 5. Envelope Generators
 
 ADSRs often look like:
-
+```
 value += increment
-
+```
 every sample.
 
 The interpolator can serve as a hardware ramp generator.
 
 One interpolator could continuously generate:
-
+```
 attack
 decay
 release
-
+```
 curves represented as fixed-point accumulators.
 
 Not a huge win for one envelope.
-
 Potentially a meaningful win for hundreds.
 
 
@@ -251,7 +239,6 @@ sequence position
 or
 
 clock division
-
 with almost no software overhead.
 
 
@@ -383,15 +370,12 @@ Almost like tiny modulation coprocessors.
 Wavefolders often use:
 
 piecewise nonlinear curves
-
 stored in tables.
 
 Interpolator hardware can:
 
 extract regions
-
 generate offsets
-
 interpolate transitions
 
 
