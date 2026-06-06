@@ -86,11 +86,12 @@ Let's start with obvious DSP applications.
 This is arguably the killer application.
 
 A wavetable oscillator normally does:
-
+```cpp
 phase += increment;
 
 index = phase >> 20;
 sample = wavetable[index];
+```
 
 Every sample.
 
