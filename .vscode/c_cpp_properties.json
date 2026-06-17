@@ -3,7 +3,7 @@
     "configurations": [
         {
             "name": "Arduino",
-            "compilerPath": "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\tools\\pqt-gcc\\4.0.1-8ec9d6f\\bin\\arm-none-eabi-g++",
+            "compilerPath": "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\tools\\pqt-gcc\\4.1.0-1aec55e\\bin\\arm-none-eabi-g++",
             "compilerArgs": [
                 "-I",
                 "-Werror=return-type",
@@ -19,18 +19,18 @@
             ],
             "intelliSenseMode": "gcc-x64",
             "includePath": [
-                "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\hardware\\rp2040\\4.5.4\\include",
-                "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\hardware\\rp2040\\4.5.4\\cores\\rp2040",
-                "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\hardware\\rp2040\\4.5.4\\variants\\rpipico2",
-                "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\tools\\pqt-gcc\\4.0.1-8ec9d6f\\arm-none-eabi\\include\\c++\\14.2.0",
-                "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\tools\\pqt-gcc\\4.0.1-8ec9d6f\\arm-none-eabi\\include\\c++\\14.2.0\\arm-none-eabi\\thumb",
-                "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\tools\\pqt-gcc\\4.0.1-8ec9d6f\\arm-none-eabi\\include\\c++\\14.2.0\\backward",
-                "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\tools\\pqt-gcc\\4.0.1-8ec9d6f\\lib\\gcc\\arm-none-eabi\\14.2.0\\include",
-                "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\tools\\pqt-gcc\\4.0.1-8ec9d6f\\lib\\gcc\\arm-none-eabi\\14.2.0\\include-fixed",
-                "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\tools\\pqt-gcc\\4.0.1-8ec9d6f\\arm-none-eabi\\include"
+                "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\hardware\\rp2040\\5.5.0\\include",
+                "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\hardware\\rp2040\\5.5.0\\cores\\rp2040",
+                "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\hardware\\rp2040\\5.5.0\\variants\\rpipico2",
+                "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\tools\\pqt-gcc\\4.1.0-1aec55e\\arm-none-eabi\\include\\c++\\14.3.0",
+                "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\tools\\pqt-gcc\\4.1.0-1aec55e\\arm-none-eabi\\include\\c++\\14.3.0\\arm-none-eabi\\thumb",
+                "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\tools\\pqt-gcc\\4.1.0-1aec55e\\arm-none-eabi\\include\\c++\\14.3.0\\backward",
+                "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\tools\\pqt-gcc\\4.1.0-1aec55e\\lib\\gcc\\arm-none-eabi\\14.3.0\\include",
+                "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\tools\\pqt-gcc\\4.1.0-1aec55e\\lib\\gcc\\arm-none-eabi\\14.3.0\\include-fixed",
+                "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\tools\\pqt-gcc\\4.1.0-1aec55e\\arm-none-eabi\\include"
             ],
             "forcedInclude": [
-                "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\hardware\\rp2040\\4.5.4\\cores\\rp2040\\Arduino.h"
+                "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\hardware\\rp2040\\5.5.0\\cores\\rp2040\\Arduino.h"
             ],
             "cStandard": "c11",
             "cppStandard": "c++17",
@@ -49,6 +49,8 @@
                 "DISABLE_FS_H_WARNING=1",
                 "ARDUINO_VARIANT=\"rpipico2\"",
                 "PICO_FLASH_SIZE_BYTES=4194304",
+                "FS_START=272621568",
+                "FS_END=272621568",
                 "F_CPU=200000000L",
                 "ARDUINO=10607",
                 "ARDUINO_RASPBERRY_PI_PICO_2",
@@ -278,7 +280,7 @@
                 "__DEC_EVAL_METHOD__=2",
                 "__FLT_MANT_DIG__=24",
                 "__LDBL_DECIMAL_DIG__=17",
-                "__VERSION__=\"14.2.0\"",
+                "__VERSION__=\"14.3.0\"",
                 "__UINT64_C(c)=c ## ULL",
                 "__ULLFRACT_FBIT__=64",
                 "__cpp_unicode_characters=201411L",
@@ -478,7 +480,7 @@
                 "__INTMAX_TYPE__=long long int",
                 "__FLT32X_HAS_QUIET_NAN__=1",
                 "__ATOMIC_CONSUME=1",
-                "__GNUC_MINOR__=2",
+                "__GNUC_MINOR__=3",
                 "__INT_FAST16_WIDTH__=32",
                 "__UINTMAX_MAX__=0xffffffffffffffffULL",
                 "__FLT32X_DENORM_MIN__=4.9406564584124654e-324F32x",

@@ -1,4 +1,3 @@
-#line 1 "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\Examples\\SimpleOscillators\\src\\audio\\buffer.c"
 #if (defined PICO_RP2350) || (defined PICO_RP2040)
 #if 1
 /*

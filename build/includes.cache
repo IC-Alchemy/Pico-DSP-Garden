@@ -2,40 +2,40 @@
   {
     "Sourcefile": null,
     "Include": "",
-    "Includepath": "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\hardware\\rp2040\\4.5.4\\cores\\rp2040"
+    "Includepath": "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\hardware\\rp2040\\5.5.0\\cores\\rp2040"
   },
   {
     "Sourcefile": null,
     "Include": "",
-    "Includepath": "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\hardware\\rp2040\\4.5.4\\variants\\rpipico2"
+    "Includepath": "C:\\Users\\Blasto\\AppData\\Local\\Arduino15\\packages\\rp2040\\hardware\\rp2040\\5.5.0\\variants\\rpipico2"
   },
   {
-    "Sourcefile": "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\build\\sketch\\SuperSaw.ino.cpp",
+    "Sourcefile": "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\build\\sketch\\SimpleOscillators.ino.cpp",
     "Include": "",
     "Includepath": null
   },
   {
-    "Sourcefile": "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\build\\sketch\\src\\audio\\audio.cpp",
+    "Sourcefile": "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\build\\sketch\\src\\audio\\audio.cpp",
     "Include": "",
     "Includepath": null
   },
   {
-    "Sourcefile": "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\build\\sketch\\src\\audio\\audio_i2s.c",
+    "Sourcefile": "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\build\\sketch\\src\\audio\\audio_i2s.c",
     "Include": "",
     "Includepath": null
   },
   {
-    "Sourcefile": "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\build\\sketch\\src\\audio\\buffer.c",
+    "Sourcefile": "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\build\\sketch\\src\\audio\\buffer.c",
     "Include": "",
     "Includepath": null
   },
   {
-    "Sourcefile": "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\build\\sketch\\src\\dsp\\oscillator.cpp",
+    "Sourcefile": "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\build\\sketch\\src\\dsp\\ladder.cpp",
     "Include": "",
     "Includepath": null
   },
   {
-    "Sourcefile": "D:\\CodePCB\\Code\\Pico\\Pico-DSP-Garden\\build\\sketch\\src\\dsp\\svf.cpp",
+    "Sourcefile": "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\build\\sketch\\src\\dsp\\oscillator.cpp",
     "Include": "",
     "Includepath": null
   }

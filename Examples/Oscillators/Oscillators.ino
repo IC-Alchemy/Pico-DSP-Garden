@@ -92,7 +92,7 @@ void fill_audio_buffer(audio_buffer_t *buffer)
 
         // Attenuate the mixed signal to prevent clipping by dividing by the number of oscillators.
         // This is a simple but effective mixing strategy.
-        mixed_signal *= 0.25f;
+        mixed_signal *= 0.05f;
 
         // Set the left and right output channels to the final mixed signal
 

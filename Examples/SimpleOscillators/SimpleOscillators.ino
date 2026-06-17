@@ -1,4 +1,3 @@
-# 1 "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\Examples\\SimpleOscillators\\SimpleOscillators.ino"
 // SimpleOscillators.ino
 // ---------------------------------------------------------------------------
 // Ladder Filter Demo – Pico-DSP-Garden
@@ -13,25 +12,25 @@
 //   Core 1  setup1()/ loop1()  – serial debug, parameter logging
 // ---------------------------------------------------------------------------
 
-# 16 "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\Examples\\SimpleOscillators\\SimpleOscillators.ino" 2
-# 17 "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\Examples\\SimpleOscillators\\SimpleOscillators.ino" 2
-# 18 "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\Examples\\SimpleOscillators\\SimpleOscillators.ino" 2
-# 19 "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\Examples\\SimpleOscillators\\SimpleOscillators.ino" 2
+#include "src/audio/audio.h"
+#include "src/audio/audio_i2s.h"
+#include "src/dsp/oscillator.h"
+#include "src/dsp/ladder.h"
 
 // ---------------------------------------------------------------------------
 // I2S pin assignment (see AGENTS.md wiring convention)
 // ---------------------------------------------------------------------------
-static const int PICO_AUDIO_I2S_DATA_PIN = 15;
+static const int PICO_AUDIO_I2S_DATA_PIN       = 15;
 static const int PICO_AUDIO_I2S_CLOCK_PIN_BASE = 16; // LRCK = 16, BCLK = 17
 
 // ---------------------------------------------------------------------------
 // Audio engine constants
 // ---------------------------------------------------------------------------
-static const float SAMPLE_RATE = 44100.0f;
-static const float INT16_MAX_F = 32767.0f;
-static const float INT16_MIN_F = -32768.0f;
-static const int NUM_AUDIO_BUFFERS = 3;
-static const int SAMPLES_PER_BUFFER = 256;
+static const float    SAMPLE_RATE        = 44100.0f;
+static const float    INT16_MAX_F        = 32767.0f;
+static const float    INT16_MIN_F        = -32768.0f;
+static const int      NUM_AUDIO_BUFFERS  = 3;
+static const int      SAMPLES_PER_BUFFER = 256;
 
 static audio_buffer_pool_t *producer_pool = nullptr;
 
@@ -41,7 +40,7 @@ static audio_buffer_pool_t *producer_pool = nullptr;
 
 // Three slightly detuned polyBLEP saws for a rich, beating unison sound.
 // Base note: A2 = 110 Hz.  Detune offsets in cents: 0, +7, -9
-static const int NUM_SAWS = 3;
+static const int   NUM_SAWS  = 3;
 static const float BASE_FREQ = 110.0f; // A2
 
 static daisysp::Oscillator saws[NUM_SAWS];
@@ -51,8 +50,8 @@ static daisysp::LadderFilter filter;
 static daisysp::Oscillator cutoff_lfo;
 
 // Shared volatile state for Core 1 monitoring (single-writer: Core 0)
-volatile float g_cutoff_hz = 0.0f;
-volatile float g_resonance = 0.0f;
+volatile float g_cutoff_hz   = 0.0f;
+volatile float g_resonance   = 0.0f;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -93,20 +92,20 @@ static void initDSP()
     // Ladder filter – LP24, high resonance, input drive gives warmth
     filter.Init(SAMPLE_RATE);
     filter.SetFilterMode(daisysp::LadderFilter::FilterMode::LP24);
-    filter.SetRes(0.85f); // 0.0 – 1.8; self-oscillates above ~1.6
-    filter.SetInputDrive(1.5f); // slight drive into the tanh stage
-    filter.SetPassbandGain(0.3f); // compensate for loudness drop at resonance
-    filter.SetFreq(200.0f); // start low; LFO will sweep this
+    filter.SetRes(0.85f);          // 0.0 – 1.8; self-oscillates above ~1.6
+    filter.SetInputDrive(1.5f);    // slight drive into the tanh stage
+    filter.SetPassbandGain(0.3f);  // compensate for loudness drop at resonance
+    filter.SetFreq(200.0f);        // start low; LFO will sweep this
 
     // Cutoff LFO – very slow triangle, period ≈ 8 s
     cutoff_lfo.Init(SAMPLE_RATE);
     cutoff_lfo.SetWaveform(daisysp::Oscillator::WAVE_TRI);
-    cutoff_lfo.SetFreq(0.125f); // 0.125 Hz → 8-second sweep
+    cutoff_lfo.SetFreq(0.125f);    // 0.125 Hz → 8-second sweep
     cutoff_lfo.SetAmp(1.0f);
 
     // Publish initial values for Core 1
-    g_cutoff_hz = 200.0f;
-    g_resonance = 0.85f;
+    g_cutoff_hz  = 200.0f;
+    g_resonance  = 0.85f;
 }
 
 // ---------------------------------------------------------------------------
@@ -114,8 +113,8 @@ static void initDSP()
 // ---------------------------------------------------------------------------
 static void fill_audio_buffer(audio_buffer_t *buffer)
 {
-    const int N = static_cast<int>(buffer->max_sample_count);
-    int16_t *out = reinterpret_cast<int16_t *>(buffer->buffer->bytes);
+    const int    N   = static_cast<int>(buffer->max_sample_count);
+    int16_t     *out = reinterpret_cast<int16_t *>(buffer->buffer->bytes);
 
     // Cutoff sweep range (Hz)
     static const float CUT_LO = 80.0f;
@@ -125,8 +124,8 @@ static void fill_audio_buffer(audio_buffer_t *buffer)
     {
         // --- Cutoff LFO: triangle [-1, +1] → [CUT_LO, CUT_HI] ---
         float lfo_val = cutoff_lfo.Process(); // range [-1, 1]
-        float t = (lfo_val + 1.0f) * 0.5f; // remap to [0, 1]
-        float cutoff = CUT_LO + t * (CUT_HI - CUT_LO);
+        float t       = (lfo_val + 1.0f) * 0.5f; // remap to [0, 1]
+        float cutoff  = CUT_LO + t * (CUT_HI - CUT_LO);
         filter.SetFreq(cutoff);
 
         // Update shared state (Core 1 reads this; single-writer is safe)
@@ -182,22 +181,22 @@ void setup()
     initDSP();
 
     static audio_format_t audioFmt = {
-        .sample_freq = static_cast<uint32_t>(SAMPLE_RATE),
-        .format = 1 /*|< signed 16bit PCM*/,
+        .sample_freq   = static_cast<uint32_t>(SAMPLE_RATE),
+        .format        = AUDIO_BUFFER_FORMAT_PCM_S16,
         .channel_count = 2
     };
     static audio_buffer_format_t bufFmt = {
-        .format = &audioFmt,
-        .sample_stride = 4 // 2 channels × 2 bytes/sample
+        .format        = &audioFmt,
+        .sample_stride = 4           // 2 channels × 2 bytes/sample
     };
 
     producer_pool = audio_new_producer_pool(&bufFmt, NUM_AUDIO_BUFFERS, SAMPLES_PER_BUFFER);
 
     audio_i2s_config_t i2sCfg = {
-        .data_pin = PICO_AUDIO_I2S_DATA_PIN,
+        .data_pin       = PICO_AUDIO_I2S_DATA_PIN,
         .clock_pin_base = PICO_AUDIO_I2S_CLOCK_PIN_BASE,
-        .dma_channel = 0,
-        .pio_sm = 0
+        .dma_channel    = 0,
+        .pio_sm         = 0
     };
 
     setupI2SAudio(&audioFmt, &i2sCfg);
@@ -222,10 +221,10 @@ void setup1()
     delay(200);
     Serial.begin(115200);
     Serial.println("[CORE1] Ladder Filter Demo starting...");
-    Serial.print ("[CORE1] Sample rate: ");
+    Serial.print  ("[CORE1] Sample rate: ");
     Serial.println(SAMPLE_RATE);
-    Serial.print ("[CORE1] Base freq:   ");
-    Serial.print (BASE_FREQ);
+    Serial.print  ("[CORE1] Base freq:   ");
+    Serial.print  (BASE_FREQ);
     Serial.println(" Hz (A2)");
     Serial.println("[CORE1] Resonance:   0.85");
     Serial.println("[CORE1] Cutoff LFO:  0.125 Hz (8-second sweep, 80–3200 Hz)");

@@ -1,4 +1,3 @@
-#line 1 "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\Examples\\SimpleOscillators\\src\\dsp\\oscillator.h"
 /*
 Copyright (c) 2020 Electrosmith, Corp
 

@@ -43,3 +43,9 @@ cmake_install.cmake
 .github/prompts/promps.prompt.md
 .gitignore
 .github/chatmodes/mode.chatmode.md
+build/*
+AGENTS.md
+.github/skills/README.md
+build/includes.cache
+build/libraries.cache
+build/includes.cache
