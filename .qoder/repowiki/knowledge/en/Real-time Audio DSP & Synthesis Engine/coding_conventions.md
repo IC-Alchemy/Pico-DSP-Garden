@@ -1,0 +1,4 @@
+- All DSP classes follow a `prepare(sampleRate)`, `reset()`, and `process()` lifecycle to ensure deterministic initialization and sample-accurate state management.
+- Template parameters are used for fixed-size buffers (e.g., `DelayLine<Capacity>`, `TriggeredSynthVoice<MaxOscillators>`) to guarantee zero dynamic memory allocation at runtime.
+- Input parameters are consistently clamped or validated at the API boundary (e.g., in setters or `applyPreset`) to keep the inner `process()` loops branch-light and realtime-safe.
+- Denormal floating-point values are actively suppressed using `zapDenormal()` in feedback-heavy components like filters and integrators to prevent CPU performance spikes.

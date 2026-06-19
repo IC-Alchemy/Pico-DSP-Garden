@@ -1,0 +1,3 @@
+- Spinlocks are used to protect shared buffer lists (free/prepared) with specific IDs defined as preprocessor constants (e.g., SPINLOCK_ID_AUDIO_FREE_LIST_LOCK).
+- Audio formats are identified by integer constants (e.g., AUDIO_BUFFER_FORMAT_PCM_S16) rather than enums for easier serialization or hardware mapping.
+- Template metaprogramming in C++ is used for zero-cost sample format conversions (e.g., FmtS16 to FmtS8) and channel mapping (Mono/Stereo) in `sample_conversion.h`.

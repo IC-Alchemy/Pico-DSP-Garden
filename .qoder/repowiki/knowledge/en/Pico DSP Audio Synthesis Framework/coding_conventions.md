@@ -1,0 +1,3 @@
+- All DSP components are implemented as header-only C++ classes within the `rpdsp` namespace, using `prepare(sampleRate)` for initialization and `process()` for sample generation.
+- Audio callbacks on Core 0 must remain non-blocking, using `volatile` variables for any state shared with Core 1's sequencing or control logic.
+- Example sketches follow a self-contained structure where `src/audio` and `src/dsp` are direct copies of the root-level canonical drivers and DSP libraries.

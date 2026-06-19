@@ -1,0 +1,10 @@
+schema_version: 1
+module_path: dsp
+title: Real-time Audio DSP & Synthesis Engine
+scope:
+    - dsp/
+source_files: []
+depends_on: []
+related_to:
+    - path: audio
+    - path: examples

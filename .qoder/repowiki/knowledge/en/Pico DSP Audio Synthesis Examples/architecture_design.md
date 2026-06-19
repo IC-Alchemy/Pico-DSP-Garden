@@ -1,0 +1,4 @@
+- Each example is a self-contained Arduino-style sketch (`.ino`) acting as the entry point, utilizing `setup()`/`loop()` for Core 0 (real-time audio) and `setup1()`/`loop1()` for Core 1 (control/UI).
+- Internal structure relies on two primary sub-modules: `src/audio/` for I2S DMA buffer management (wrapping `pico-audio` C APIs) and `src/dsp/` for C++ oscillator implementations.
+- Dependency direction flows from the sketch to high-level DSP classes (e.g., `rpdsp::SineOscillator`, `daisysp::Hypersaw`), which in turn depend on low-level phase accumulators and I2S buffer pools.
+- Shared memory (`volatile` variables) is used for inter-core communication, allowing Core 1 to update synthesis parameters without blocking Core 0's audio callback.

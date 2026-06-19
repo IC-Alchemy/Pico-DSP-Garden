@@ -1,0 +1,4 @@
+- **Layered Architecture**: The module is split into a hardware-agnostic core (`audio.h`, `audio.cpp`) defining buffer pools and producer-consumer connections, and a hardware-specific I2S driver (`audio_i2s.h`, `audio_i2s.c`) using the RP2040 PIO.
+- **Buffer Management**: Uses a custom `mem_buffer_t` wrapper (`buffer.h`) and `audio_buffer_t` structures managed via spinlock-protected free and prepared lists to ensure thread-safe access between cores.
+- **Producer-Consumer Pattern**: Implements a flexible connection model (`audio_connection_t`) where producers (e.g., decoders) and consumers (e.g., I2S output) exchange buffers through configurable take/give hooks, supporting format conversion (mono/stereo, S8/S16) via template-based helpers in `sample_conversion.h`.
+- **PIO Integration**: The I2S driver (`audio_i2s.pio`) defines state machine programs for bit-banging I2S signals, controlled by DMA transfers triggered by a shared IRQ handler in `audio_i2s.c`.

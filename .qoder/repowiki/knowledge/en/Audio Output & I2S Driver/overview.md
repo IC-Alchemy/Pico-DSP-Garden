@@ -1,0 +1,1 @@
+Provides a common API for audio buffer management and a PIO-based I2S output driver for Raspberry Pi RP2040/RP2350 microcontrollers.

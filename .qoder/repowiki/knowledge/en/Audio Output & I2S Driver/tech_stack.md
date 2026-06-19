@@ -1,0 +1,1 @@
+C/C++ mix for embedded RP2040/RP2350; uses PIO (Programmable I/O) for precise I2S timing and DMA for zero-CPU-overhead data transfer.

@@ -1,0 +1,1 @@
+Orchestrates a dual-core audio engine on RP2040/RP2350 by wiring a self-authored header-only DSP library to a PIO-driven I2S output driver through self-contained Arduino example sketches.

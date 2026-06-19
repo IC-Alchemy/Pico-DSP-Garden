@@ -1,0 +1,4 @@
+- Audio callbacks (`fill_audio_buffer`) strictly avoid blocking operations and use pre-allocated `audio_buffer_pool_t` instances to ensure real-time safety on Core 0.
+- Inter-core state sharing utilizes `volatile` qualifiers for frequency and parameter variables, with Core 1 acting as the single writer and Core 0 as the reader.
+- DSP oscillators follow a consistent `prepare(sampleRate)`, `setFreq()`, and `process()` interface pattern across both `rpdsp` and `daisysp` implementations.
+- Sample conversion from float to int16_t consistently applies clamping via `rpdsp::clamp` or `daisysp::fclamp` before casting to prevent overflow artifacts.

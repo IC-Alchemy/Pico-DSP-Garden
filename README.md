@@ -31,7 +31,7 @@ Default wiring (adjustable per sketch):
 
 ```
 audio/      Core I2S driver — DMA, PIO, buffer management
-DaisySP/    Embedded DSP library (oscillators, effects, utilities)
+dsp/        Self-authored rpdsp DSP library — oscillators, filters, effects (header-only)
 Examples/   Working sketches: SuperSaw, multi-oscillator, and more
 build/      Build artifacts (generated, not for editing)
 ```

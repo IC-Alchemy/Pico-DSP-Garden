@@ -1,0 +1,1 @@
+C++17 (gnu++17), Arduino IDE (Earle Philhower RP2040 core), PIO (Programmable I/O) for I2S timing, DMA for audio buffer transfer.

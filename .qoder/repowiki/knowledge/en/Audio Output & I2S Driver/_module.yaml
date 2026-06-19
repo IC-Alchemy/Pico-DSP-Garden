@@ -1,0 +1,10 @@
+schema_version: 1
+module_path: audio
+title: Audio Output & I2S Driver
+scope:
+    - audio/
+source_files: []
+depends_on: []
+related_to:
+    - path: dsp
+    - path: examples

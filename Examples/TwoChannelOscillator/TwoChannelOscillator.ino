@@ -29,8 +29,8 @@ const int   SAMPLES_PER_BUFFER = 256;
 audio_buffer_pool_t *producer_pool = nullptr;
 
 // ─── Oscillators ──────────────────────────────────────────────────────────────
-daisysp::Oscillator osc_left;
-daisysp::Oscillator osc_right;
+rpdsp::SineOscillator osc_left;
+rpdsp::SineOscillator osc_right;
 
 // ─── Shared frequency state (Core 1 writes, Core 0 reads) ────────────────────
 volatile float left_freq  = 440.0f;
@@ -61,7 +61,7 @@ static inline float mapFine(float adc12) {
 // ─── Audio helpers ────────────────────────────────────────────────────────────
 static inline int16_t toInt16(float s) {
     float v = roundf(s * INT16_MAX_F);
-    v = daisysp::fclamp(v, INT16_MIN_F, INT16_MAX_F);
+    v = rpdsp::clamp(v, INT16_MIN_F, INT16_MAX_F);
     return static_cast<int16_t>(v);
 }
 
@@ -71,12 +71,12 @@ void fill_audio_buffer(audio_buffer_t *buffer) {
     int16_t *out = reinterpret_cast<int16_t *>(buffer->buffer->bytes);
 
     // Snapshot frequencies once per buffer to avoid tearing mid-fill.
-    osc_left.SetFreq(left_freq);
-    osc_right.SetFreq(right_freq);
+    osc_left.setFreq(left_freq);
+    osc_right.setFreq(right_freq);
 
     for (int i = 0; i < N; ++i) {
-        out[2 * i + 0] = toInt16(osc_left.Process());   // left
-        out[2 * i + 1] = toInt16(osc_right.Process());  // right
+        out[2 * i + 0] = toInt16(osc_left.process() * 0.8f);   // left
+        out[2 * i + 1] = toInt16(osc_right.process() * 0.8f);  // right
     }
     buffer->sample_count = N;
 }
@@ -102,15 +102,11 @@ void setup() {
     Serial.begin(115200);
     delay(150);
 
-    osc_left.Init(SAMPLE_RATE);
-    osc_left.SetWaveform(daisysp::Oscillator::WAVE_SIN);
-    osc_left.SetFreq(left_freq);
-    osc_left.SetAmp(0.8f);
+    osc_left.prepare(SAMPLE_RATE);
+    osc_left.setFreq(left_freq);
 
-    osc_right.Init(SAMPLE_RATE);
-    osc_right.SetWaveform(daisysp::Oscillator::WAVE_SIN);
-    osc_right.SetFreq(right_freq);
-    osc_right.SetAmp(0.8f);
+    osc_right.prepare(SAMPLE_RATE);
+    osc_right.setFreq(right_freq);
 
     static audio_format_t fmt = {
         .sample_freq  = (uint32_t)SAMPLE_RATE,
@@ -163,8 +159,8 @@ void loop1() {
     float rf = mapCoarse(sr_coarse) + mapFine(sr_fine);
 
     // Clamp to audible range before writing shared state.
-    left_freq  = daisysp::fclamp(lf, 20.0f, 20000.0f);
-    right_freq = daisysp::fclamp(rf, 20.0f, 20000.0f);
+    left_freq  = rpdsp::clamp(lf, 20.0f, 20000.0f);
+    right_freq = rpdsp::clamp(rf, 20.0f, 20000.0f);
 
     delay(10); // poll at ~100 Hz, well below audio rate
 }

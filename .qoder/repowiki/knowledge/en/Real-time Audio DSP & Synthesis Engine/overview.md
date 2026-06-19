@@ -1,0 +1,1 @@
+A header-only C++ library providing real-time audio synthesis, effects processing, dynamics control, and hardware interaction utilities for embedded and host environments.

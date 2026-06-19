@@ -1,0 +1,6 @@
+- **Core Foundation**: `config.h` defines compile-time block sizes and constants; `algorithm.h` provides shared mathematical helpers (clamping, interpolation, dB conversion) used across all modules.
+- **Signal Generation**: `oscillator.h` implements both naive (phasor-based) and band-limited (B-spline impulse integration) oscillators, while `envelope.h` handles ADSR state machines.
+- **Filtering & Dynamics**: `filter.h` offers one-pole, biquad, and state-variable filters; `dynamics.h` implements envelope followers and compressors with separate attack/release smoothing.
+- **Effects & Delay**: `delay_line.h` is a template-based circular buffer with cubic interpolation, serving as the foundation for `effects.h` classes like Chorus, Delay, and Schroeder Reverb.
+- **Synthesis Architecture**: `voice.h` composes oscillators, filters, and envelopes into a polyphonic-ready `TriggeredSynthVoice` template, isolating preset data from runtime state.
+- **Control & Sequencing**: `gate_pattern.h` and `rhythm_sequencer.h` manage step-sequencing logic, while `knob_bank.h` and `pickup_knob.h` handle physical-to-digital parameter mapping with 'takeover' logic to prevent audio jumps.
