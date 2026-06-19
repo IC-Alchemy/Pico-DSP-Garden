@@ -40,8 +40,8 @@ void initHypersaw()
     hypersaw.SetAllWaveforms(daisysp::Oscillator::WAVE_POLYBLEP_SAW); // Use saw waves
 
 //  adjust the detune and mix parameters here!!!! 
-            hypersaw.SetDetune(.51f);
-            hypersaw.SetMix(.3f);
+            hypersaw.SetDetune(.681f);
+            hypersaw.SetMix(.5f);
 
 }
 
@@ -73,7 +73,7 @@ void fill_audio_buffer(audio_buffer_t *buffer)
 
             // 4. Get the final signal from the Hypersaw oscillator
             mixed_signal = hypersaw.Process();
-            mixed_signal *= 0.8f;
+            mixed_signal *= 0.33f;
         
 
         // Track maximum signal for debugging
@@ -171,7 +171,7 @@ void loop1()
 //  I am using a blocking delay here to show how you can actually do whatever you want
 //  in the second core.  
 
-    delay(500);
+    delay(122);
 
     note_index = (note_index + 1) % 32; // Cycle through the scale (32 notes total)
 }

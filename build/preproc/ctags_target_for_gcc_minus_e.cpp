@@ -1,22 +1,17 @@
 # 1 "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\Examples\\SimpleOscillators\\SimpleOscillators.ino"
 // SimpleOscillators.ino
 // ---------------------------------------------------------------------------
-// Ladder Filter Demo – Pico-DSP-Garden
+// Simple Oscillators Demo - Pico-DSP-Garden
 //
-// Three polyBLEP sawtooth oscillators, slightly detuned, are summed and fed
-// into a Huovilainen Moog ladder filter (LP24).  A slow triangle LFO sweeps
-// the filter cutoff from ~100 Hz to ~3 kHz while resonance is held high
-// (~0.85) for that classic "liquid" self-resonant sweep sound.
+// A band-limited second-order B-spline hard-sync saw oscillator plays long
+// C minor pentatonic notes from roughly 110-440 Hz. The slave frequency is the
+// note pitch; the master oscillator is slowly modulated to sweep the hard-sync
+// timbre while the pitch stays musical.
 //
-// Dual-core layout (see AGENTS.md):
-//   Core 0  setup() / loop()   – real-time audio fill; must never block
-//   Core 1  setup1()/ loop1()  – serial debug, parameter logging
-// ---------------------------------------------------------------------------
 
-# 16 "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\Examples\\SimpleOscillators\\SimpleOscillators.ino" 2
-# 17 "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\Examples\\SimpleOscillators\\SimpleOscillators.ino" 2
-# 18 "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\Examples\\SimpleOscillators\\SimpleOscillators.ino" 2
-# 19 "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\Examples\\SimpleOscillators\\SimpleOscillators.ino" 2
+# 12 "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\Examples\\SimpleOscillators\\SimpleOscillators.ino" 2
+# 13 "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\Examples\\SimpleOscillators\\SimpleOscillators.ino" 2
+# 14 "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\Examples\\SimpleOscillators\\SimpleOscillators.ino" 2
 
 // ---------------------------------------------------------------------------
 // I2S pin assignment (see AGENTS.md wiring convention)
@@ -38,39 +33,38 @@ static audio_buffer_pool_t *producer_pool = nullptr;
 // ---------------------------------------------------------------------------
 // DSP objects
 // ---------------------------------------------------------------------------
+static rpdsp::SecondOrderBSplineHardSyncSawOscillator hard_sync_osc;
+static rpdsp::SineOscillator master_lfo;
 
-// Three slightly detuned polyBLEP saws for a rich, beating unison sound.
-// Base note: A2 = 110 Hz.  Detune offsets in cents: 0, +7, -9
-static const int NUM_SAWS = 3;
-static const float BASE_FREQ = 110.0f; // A2
+static const float ROOT_FREQ = 116.5409f; // Bb2, part of C minor pentatonic
 
-static daisysp::Oscillator saws[NUM_SAWS];
-static daisysp::LadderFilter filter;
+static const int SCALE_LENGTH = 10;
+static const float C_MINOR_PENTATONIC[SCALE_LENGTH] = {
+    116.5409f, // Bb2
+    130.8128f, // C3
+    155.5635f, // Eb3
+    174.6141f, // F3
+    195.9977f, // G3
+    233.0819f, // Bb3
+    261.6256f, // C4
+    311.1270f, // Eb4
+    349.2282f, // F4
+    391.9954f // G4
+};
 
-// LFO for cutoff sweep – use the Oscillator triangle wave at Core 0 sample rate
-static daisysp::Oscillator cutoff_lfo;
+volatile int g_note_index = 0;
+volatile float g_slave_hz = ROOT_FREQ;
 
 // Shared volatile state for Core 1 monitoring (single-writer: Core 0)
-volatile float g_cutoff_hz = 0.0f;
-volatile float g_resonance = 0.0f;
+volatile float g_master_hz = ROOT_FREQ * 0.5f;
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-// Convert cents offset to a frequency multiplier
-static inline float cents_to_ratio(float cents)
-{
-    // 2^(cents/1200)  – approximated with fast exp2 via: e^(cents*ln2/1200)
-    // Using the standard powf; compile with -Os so it's inlined appropriately.
-    return powf(2.0f, cents / 1200.0f);
-}
-
 static inline int16_t float_to_int16(float s)
 {
     float scaled = s * INT16_MAX_F;
-    // fclamp is from dsp.h / DaisySP
-    scaled = daisysp::fclamp(scaled, INT16_MIN_F, INT16_MAX_F);
+    scaled = rpdsp::clamp(scaled, INT16_MIN_F, INT16_MAX_F);
     return static_cast<int16_t>(scaled);
 }
 
@@ -79,73 +73,37 @@ static inline int16_t float_to_int16(float s)
 // ---------------------------------------------------------------------------
 static void initDSP()
 {
-    // Detune offsets in cents for each voice: root, slightly sharp, slightly flat
-    const float detune_cents[NUM_SAWS] = { 0.0f, +7.0f, -9.0f };
+    hard_sync_osc.prepare(SAMPLE_RATE);
+    hard_sync_osc.reset();
+    hard_sync_osc.setSlaveFrequency(g_slave_hz);
+    hard_sync_osc.setMasterFrequency(g_master_hz);
 
-    for (int i = 0; i < NUM_SAWS; ++i)
-    {
-        saws[i].Init(SAMPLE_RATE);
-        saws[i].SetWaveform(daisysp::Oscillator::WAVE_POLYBLEP_SAW);
-        saws[i].SetFreq(BASE_FREQ * cents_to_ratio(detune_cents[i]));
-        saws[i].SetAmp(1.0f);
-    }
-
-    // Ladder filter – LP24, high resonance, input drive gives warmth
-    filter.Init(SAMPLE_RATE);
-    filter.SetFilterMode(daisysp::LadderFilter::FilterMode::LP24);
-    filter.SetRes(0.85f); // 0.0 – 1.8; self-oscillates above ~1.6
-    filter.SetInputDrive(1.5f); // slight drive into the tanh stage
-    filter.SetPassbandGain(0.3f); // compensate for loudness drop at resonance
-    filter.SetFreq(200.0f); // start low; LFO will sweep this
-
-    // Cutoff LFO – very slow triangle, period ≈ 8 s
-    cutoff_lfo.Init(SAMPLE_RATE);
-    cutoff_lfo.SetWaveform(daisysp::Oscillator::WAVE_TRI);
-    cutoff_lfo.SetFreq(0.125f); // 0.125 Hz → 8-second sweep
-    cutoff_lfo.SetAmp(1.0f);
-
-    // Publish initial values for Core 1
-    g_cutoff_hz = 200.0f;
-    g_resonance = 0.85f;
+    master_lfo.prepare(SAMPLE_RATE);
+    master_lfo.reset();
+    master_lfo.setFreq(0.05f); // one timbre sweep about every 28 seconds
 }
 
 // ---------------------------------------------------------------------------
-// Audio fill callback – Core 0 hot path; must not block
+// Audio fill callback - Core 0 hot path; must not block
 // ---------------------------------------------------------------------------
 static void fill_audio_buffer(audio_buffer_t *buffer)
 {
     const int N = static_cast<int>(buffer->max_sample_count);
     int16_t *out = reinterpret_cast<int16_t *>(buffer->buffer->bytes);
 
-    // Cutoff sweep range (Hz)
-    static const float CUT_LO = 80.0f;
-    static const float CUT_HI = 3200.0f;
-
     for (int i = 0; i < N; ++i)
     {
-        // --- Cutoff LFO: triangle [-1, +1] → [CUT_LO, CUT_HI] ---
-        float lfo_val = cutoff_lfo.Process(); // range [-1, 1]
-        float t = (lfo_val + 1.0f) * 0.5f; // remap to [0, 1]
-        float cutoff = CUT_LO + t * (CUT_HI - CUT_LO);
-        filter.SetFreq(cutoff);
+        float slave_hz = g_slave_hz;
+        float lfo = (master_lfo.process() + 1.0f) * 0.5f;
+        float master_hz = slave_hz * (0.35f + (1.35f * lfo));
 
-        // Update shared state (Core 1 reads this; single-writer is safe)
-        g_cutoff_hz = cutoff;
+        hard_sync_osc.setSlaveFrequency(slave_hz);
+        hard_sync_osc.setMasterFrequency(master_hz);
+        g_master_hz = master_hz;
 
-        // --- Sum three detuned polyBLEP saws ---
-        float osc_mix = 0.0f;
-        for (int j = 0; j < NUM_SAWS; ++j)
-        {
-            osc_mix += saws[j].Process();
-        }
-        // Normalise to roughly -1..+1 range before filter
-        osc_mix *= (1.0f / NUM_SAWS);
+        float signal = rpdsp::softClip(hard_sync_osc.process() * 0.15f);
 
-        // --- Ladder filter ---
-        float filtered = filter.Process(osc_mix);
-
-        // --- Output stereo (L = R) ---
-        int16_t s = float_to_int16(filtered * 0.8f); // slight headroom
+        int16_t s = float_to_int16(signal * 0.12f);
         out[2 * i + 0] = s; // Left
         out[2 * i + 1] = s; // Right
     }
@@ -173,7 +131,7 @@ static void setupI2SAudio(audio_format_t *audioFmt, audio_i2s_config_t *i2sCfg)
 }
 
 // ---------------------------------------------------------------------------
-// Core 0 – setup & loop (real-time audio)
+// Core 0 - setup & loop (real-time audio)
 // ---------------------------------------------------------------------------
 void setup()
 {
@@ -188,7 +146,7 @@ void setup()
     };
     static audio_buffer_format_t bufFmt = {
         .format = &audioFmt,
-        .sample_stride = 4 // 2 channels × 2 bytes/sample
+        .sample_stride = 4 // 2 channels x 2 bytes/sample
     };
 
     producer_pool = audio_new_producer_pool(&bufFmt, NUM_AUDIO_BUFFERS, SAMPLES_PER_BUFFER);
@@ -205,7 +163,7 @@ void setup()
 
 void loop()
 {
-    // Real-time audio fill – Core 0 must never block here
+    // Real-time audio fill - Core 0 must never block here
     audio_buffer_t *buf = take_audio_buffer(producer_pool, true);
     if (buf)
     {
@@ -215,32 +173,44 @@ void loop()
 }
 
 // ---------------------------------------------------------------------------
-// Core 1 – setup1 & loop1 (non-real-time: serial debug, etc.)
+// Core 1 - setup1 & loop1 (non-real-time: serial debug, etc.)
 // ---------------------------------------------------------------------------
 void setup1()
 {
     delay(200);
     Serial.begin(115200);
-    Serial.println("[CORE1] Ladder Filter Demo starting...");
+    Serial.println("[CORE1] Simple Oscillators hard-sync demo starting...");
     Serial.print ("[CORE1] Sample rate: ");
     Serial.println(SAMPLE_RATE);
-    Serial.print ("[CORE1] Base freq:   ");
-    Serial.print (BASE_FREQ);
-    Serial.println(" Hz (A2)");
-    Serial.println("[CORE1] Resonance:   0.85");
-    Serial.println("[CORE1] Cutoff LFO:  0.125 Hz (8-second sweep, 80–3200 Hz)");
+    Serial.println("[CORE1] Scale:       C minor pentatonic, long notes");
+    Serial.println("[CORE1] Slave range: 110-440 Hz");
+    Serial.println("[CORE1] Master LFO:  0.035 Hz");
 }
 
 void loop1()
 {
-    // Print cutoff position approximately every 500 ms for monitoring
-    static uint32_t last_print_ms = 0;
+    static const uint32_t NOTE_MS = 8000;
+    static uint32_t last_note_ms = 0;
+
     uint32_t now = millis();
+    if (now - last_note_ms >= NOTE_MS)
+    {
+        last_note_ms = now;
+        g_note_index = (g_note_index + 1) % SCALE_LENGTH;
+
+        float note_hz = C_MINOR_PENTATONIC[g_note_index];
+        g_slave_hz = note_hz;
+    }
+
+    // Print the current pitch and sync sweep approximately every 500 ms.
+    static uint32_t last_print_ms = 0;
     if (now - last_print_ms >= 500)
     {
         last_print_ms = now;
-        Serial.print("[CORE1] cutoff = ");
-        Serial.print(g_cutoff_hz, 1);
+        Serial.print("[CORE1] slave = ");
+        Serial.print(g_slave_hz, 1);
+        Serial.print(" Hz, master = ");
+        Serial.print(g_master_hz, 1);
         Serial.println(" Hz");
     }
 }
