@@ -77,8 +77,8 @@ RP2350 gives two cores, but the realtime audio owner still needs a clear boundar
 
 Recommended split:
 
-- Core 0: USB, UI, MIDI, patch management, display, storage, and non-realtime control.
-- Core 1: audio callback, DSP graph, DMA refill, and minimal metering publication.
+- Core 0: audio callback, DSP graph, DMA refill, and minimal metering publication.
+- Core 1: USB, UI, MIDI, patch management, display, storage, and non-realtime control.
 
 Communication rules:
 

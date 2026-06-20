@@ -71,6 +71,15 @@ inline float softClip(float value) {
   return value / (1.0f + std::fabs(value));
 }
 
+// Cheap rational tanh approximation; saturates to +/-1 for |x| > 3.
+// For saturators/clippers in the DSP path where std::tanh is too costly.
+inline float fastTanh(float x) {
+  if (x > 3.0f) return 1.0f;
+  if (x < -3.0f) return -1.0f;
+  const float x2 = x * x;
+  return x * (27.0f + x2) / (27.0f + 9.0f * x2);
+}
+
 // Equal-power pan keeps perceived loudness steadier through center.
 inline float equalPowerPanLeft(float pan) {
   return std::cos(clamp01((pan + 1.0f) * 0.5f) * kPi * 0.5f);

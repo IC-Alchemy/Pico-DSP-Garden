@@ -55,8 +55,8 @@ That example reserves one second per channel at 48 kHz. It is predictable, but n
 
 A practical default is:
 
-- Core 0 owns control, USB, UI, patch state, and non-realtime services.
-- Core 1 owns the audio callback and DSP graph.
+- Core 0 owns the audio callback and DSP graph.
+- Core 1 owns control, USB, UI, patch state, and non-realtime services.
 
 Do not split one sample block across cores until a single-core graph has been measured and proven insufficient. Cross-core synchronization can cost more than a small DSP module.
 
