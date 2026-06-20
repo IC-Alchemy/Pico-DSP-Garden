@@ -1,0 +1,175 @@
+# 知识卡导出索引文件
+schema_version: 1
+locale: en-US
+branch: v2
+exported_at: "2026-06-19T23:12:05Z"
+modules:
+    "":
+        dir_name: RP2040 Real-Time Audio Synthesis Platform
+        title: RP2040 Real-Time Audio Synthesis Platform
+        scope:
+            - README.md
+            - .github\skills\README.md
+            - .gitignore
+            - .kilo\plans\1781859591788-migrate-rpdsp-from-daisysp.md
+            - .qoder\agents\builtin\qa.md
+            - .qoder\agents\ic-alchemy-voice.md
+            - .vscode\arduino.json
+            - .vscode\c_cpp_properties.json
+            - AGENTS.md
+            - Examples\Oscillators\Oscillators.ino
+            - Examples\Oscillators\src\audio\audio.cpp
+            - Examples\Oscillators\src\audio\audio.h
+            - Examples\Oscillators\src\audio\audio_i2s.c
+            - Examples\Oscillators\src\audio\audio_i2s.h
+            - Examples\Oscillators\src\audio\audio_i2s.pio
+            - Examples\Oscillators\src\audio\audio_i2s.pio.h
+            - Examples\Oscillators\src\audio\buffer.c
+            - Examples\Oscillators\src\audio\buffer.h
+            - Examples\Oscillators\src\audio\sample_conversion.h
+            - Examples\Oscillators\src\dsp\algorithm.h
+            - Examples\Oscillators\src\dsp\config.h
+            - Examples\Oscillators\src\dsp\delay_line.h
+            - Examples\Oscillators\src\dsp\dynamics.h
+            - Examples\Oscillators\src\dsp\effects.h
+            - Examples\Oscillators\src\dsp\envelope.h
+            - Examples\Oscillators\src\dsp\filter.h
+            - Examples\Oscillators\src\dsp\gate_pattern.h
+            - Examples\Oscillators\src\dsp\joystick_recorder.h
+            - Examples\Oscillators\src\dsp\knob_bank.h
+            - Examples\Oscillators\src\dsp\oscillator.h
+            - Examples\Oscillators\src\dsp\parameter_smoother.h
+            - Examples\Oscillators\src\dsp\pickup_knob.h
+            - Examples\Oscillators\src\dsp\realtime.h
+            - Examples\Oscillators\src\dsp\rhythm_sequencer.h
+            - Examples\Oscillators\src\dsp\voice.h
+            - Examples\SimpleOscillators\SimpleOscillators.ino
+            - Examples\SimpleOscillators\src\audio\audio.cpp
+            - Examples\SimpleOscillators\src\audio\audio.h
+            - Examples\SimpleOscillators\src\audio\audio_i2s.c
+            - Examples\SimpleOscillators\src\audio\audio_i2s.h
+            - Examples\SimpleOscillators\src\audio\audio_i2s.pio
+            - Examples\SimpleOscillators\src\audio\audio_i2s.pio.h
+            - Examples\SimpleOscillators\src\audio\buffer.c
+            - Examples\SimpleOscillators\src\audio\buffer.h
+            - Examples\SimpleOscillators\src\audio\sample_conversion.h
+            - Examples\SimpleOscillators\src\dsp\algorithm.h
+            - Examples\SimpleOscillators\src\dsp\config.h
+            - Examples\SimpleOscillators\src\dsp\delay_line.h
+            - Examples\SimpleOscillators\src\dsp\dynamics.h
+            - Examples\SimpleOscillators\src\dsp\effects.h
+            - Examples\SimpleOscillators\src\dsp\envelope.h
+            - Examples\SimpleOscillators\src\dsp\filter.h
+            - Examples\SimpleOscillators\src\dsp\gate_pattern.h
+            - Examples\SimpleOscillators\src\dsp\joystick_recorder.h
+            - Examples\SimpleOscillators\src\dsp\knob_bank.h
+            - Examples\SimpleOscillators\src\dsp\oscillator.h
+            - Examples\SimpleOscillators\src\dsp\parameter_smoother.h
+            - Examples\SimpleOscillators\src\dsp\pickup_knob.h
+            - Examples\SimpleOscillators\src\dsp\realtime.h
+            - Examples\SimpleOscillators\src\dsp\rhythm_sequencer.h
+            - Examples\SimpleOscillators\src\dsp\voice.h
+            - Examples\SuperSaw\SuperSaw.ino
+            - Examples\SuperSaw\src\audio\audio.cpp
+            - Examples\SuperSaw\src\audio\audio.h
+            - Examples\SuperSaw\src\audio\audio_i2s.c
+            - Examples\SuperSaw\src\audio\audio_i2s.h
+            - Examples\SuperSaw\src\audio\audio_i2s.pio
+            - Examples\SuperSaw\src\audio\audio_i2s.pio.h
+            - Examples\SuperSaw\src\audio\buffer.c
+            - Examples\SuperSaw\src\audio\buffer.h
+            - Examples\SuperSaw\src\audio\sample_conversion.h
+            - Examples\SuperSaw\src\dsp\SuperSaw.h
+            - Examples\SuperSaw\src\dsp\dsp.h
+            - Examples\SuperSaw\src\dsp\oscillator.cpp
+            - Examples\SuperSaw\src\dsp\oscillator.h
+            - Examples\SuperSaw\src\dsp\svf.cpp
+            - Examples\SuperSaw\src\dsp\svf.h
+            - Examples\TwoChannelOscillator\TwoChannelOscillator.ino
+            - Examples\TwoChannelOscillator\src\audio\audio.cpp
+            - Examples\TwoChannelOscillator\src\audio\audio.h
+            - Examples\TwoChannelOscillator\src\audio\audio_i2s.c
+            - Examples\TwoChannelOscillator\src\audio\audio_i2s.h
+            - Examples\TwoChannelOscillator\src\audio\audio_i2s.pio
+            - Examples\TwoChannelOscillator\src\audio\audio_i2s.pio.h
+            - Examples\TwoChannelOscillator\src\audio\buffer.c
+            - Examples\TwoChannelOscillator\src\audio\buffer.h
+            - Examples\TwoChannelOscillator\src\audio\sample_conversion.h
+            - Examples\TwoChannelOscillator\src\dsp\algorithm.h
+            - Examples\TwoChannelOscillator\src\dsp\config.h
+            - Examples\TwoChannelOscillator\src\dsp\delay_line.h
+            - Examples\TwoChannelOscillator\src\dsp\dynamics.h
+            - Examples\TwoChannelOscillator\src\dsp\effects.h
+            - Examples\TwoChannelOscillator\src\dsp\envelope.h
+            - Examples\TwoChannelOscillator\src\dsp\filter.h
+            - Examples\TwoChannelOscillator\src\dsp\gate_pattern.h
+            - Examples\TwoChannelOscillator\src\dsp\joystick_recorder.h
+            - Examples\TwoChannelOscillator\src\dsp\knob_bank.h
+            - Examples\TwoChannelOscillator\src\dsp\oscillator.h
+            - Examples\TwoChannelOscillator\src\dsp\parameter_smoother.h
+            - Examples\TwoChannelOscillator\src\dsp\pickup_knob.h
+            - Examples\TwoChannelOscillator\src\dsp\realtime.h
+            - Examples\TwoChannelOscillator\src\dsp\rhythm_sequencer.h
+            - Examples\TwoChannelOscillator\src\dsp\voice.h
+            - audio\audio.cpp
+            - audio\audio.h
+            - audio\audio_i2s.c
+            - audio\audio_i2s.h
+            - audio\audio_i2s.pio
+            - audio\audio_i2s.pio.h
+            - audio\buffer.c
+            - audio\buffer.h
+            - audio\sample_conversion.h
+            - dsp\algorithm.h
+            - dsp\config.h
+            - dsp\delay_line.h
+            - dsp\dynamics.h
+            - dsp\effects.h
+            - dsp\envelope.h
+            - dsp\filter.h
+            - dsp\gate_pattern.h
+            - dsp\joystick_recorder.h
+            - dsp\knob_bank.h
+            - dsp\oscillator.h
+            - dsp\parameter_smoother.h
+            - dsp\pickup_knob.h
+            - dsp\realtime.h
+            - dsp\rhythm_sequencer.h
+            - dsp\voice.h
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    audio_library:
+        dir_name: Audio Output & Buffer Management
+        title: Audio Output & Buffer Management
+        scope:
+            - audio/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: examples
+            - path: dsp_library
+    dsp_library:
+        dir_name: Real-time Audio DSP Library
+        title: Real-time Audio DSP Library
+        scope:
+            - dsp/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: examples
+            - path: audio_library
+    examples:
+        dir_name: RP2040 Audio Synthesis Examples
+        title: RP2040 Audio Synthesis Examples
+        scope:
+            - Examples/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: audio_library
+            - path: dsp_library

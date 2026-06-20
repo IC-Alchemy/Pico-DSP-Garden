@@ -1,5 +1,7 @@
-# Build directory
+# Build directories
 Examples/Oscillators/build/
+Examples/*/build/
+libraries/*/build/
 
 # Prerequisites
 *.d
@@ -44,8 +46,11 @@ cmake_install.cmake
 .gitignore
 .github/chatmodes/mode.chatmode.md
 build/*
-AGENTS.md
 .github/skills/README.md
-build/includes.cache
+build/*
 build/libraries.cache
 build/includes.cache
+build\*
+build/compile_commands.json
+build/build.options.json
+.vscode/arduino.json

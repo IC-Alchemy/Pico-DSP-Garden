@@ -8,9 +8,13 @@
 // timbre while the pitch stays musical.
 //
 
-#include "src/audio/audio.h"
-#include "src/audio/audio_i2s.h"
-#include "src/dsp/oscillator.h"
+// Library discovery triggers — arduino-cli detects libraries via root-level src/ headers.
+#include <rpdsp.h>
+#include <pico_audio_i2s.h>
+
+#include <pico_audio_i2s/audio.h>
+#include <pico_audio_i2s/audio_i2s.h>
+#include <rpdsp/oscillator.h>
 
 // ---------------------------------------------------------------------------
 // I2S pin assignment (see AGENTS.md wiring convention)
@@ -21,11 +25,11 @@ static const int PICO_AUDIO_I2S_CLOCK_PIN_BASE = 16; // LRCK = 16, BCLK = 17
 // ---------------------------------------------------------------------------
 // Audio engine constants
 // ---------------------------------------------------------------------------
-static const float    SAMPLE_RATE        = 44100.0f;
+static const float    SAMPLE_RATE        = 48000.0f;
 static const float    INT16_MAX_F        = 32767.0f;
 static const float    INT16_MIN_F        = -32768.0f;
 static const int      NUM_AUDIO_BUFFERS  = 3;
-static const int      SAMPLES_PER_BUFFER = 256;
+static const int      SAMPLES_PER_BUFFER = 32;
 
 static audio_buffer_pool_t *producer_pool = nullptr;
 

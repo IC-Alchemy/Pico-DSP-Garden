@@ -1,7 +1,7 @@
 {
     "configuration": "flash=4194304_0,arch=arm,freq=200,opt=Optimize3,profile=Disabled,rtti=Disabled,stackprotect=Disabled,exceptions=Disabled,dbgport=Disabled,dbglvl=None,usbstack=picosdk,ipbtstack=ipv4only,uploadmethod=default",
     "board": "rp2040:rp2040:rpipico2",
-    "sketch": "Examples\\SimpleOscillators\\SimpleOscillators.ino",
+    "sketch": "Examples\\Oscillators\\Oscillators.ino",
     "port": "COM6",
     "output": "build"
 

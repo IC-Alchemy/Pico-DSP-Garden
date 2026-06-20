@@ -1,6 +1,10 @@
-#include "src/audio/audio.h"
-#include "src/audio/audio_i2s.h"
-#include "src/dsp/oscillator.h"
+// Library discovery triggers — arduino-cli detects libraries via root-level src/ headers.
+#include <rpdsp.h>
+#include <pico_audio_i2s.h>
+
+#include <pico_audio_i2s/audio.h>
+#include <pico_audio_i2s/audio_i2s.h>
+#include <rpdsp/oscillator.h>
 // Define the number of oscillators
 
 //  pins for the I2S audio most should work fine, but I'm using PCM510x
@@ -8,56 +12,36 @@ int PICO_AUDIO_I2S_DATA_PIN = 15;
 int PICO_AUDIO_I2S_CLOCK_PIN_BASE = 16; //  Pico forces you to use BasePin + 1 for the LRCK so LRCK is 17
 
 
-float SAMPLE_RATE = 44100.0f;
+float SAMPLE_RATE = 48000.0f;
 float INT16_MAX_AS_FLOAT = 32767.0f;
 float INT16_MIN_AS_FLOAT = -32768.0f;
 int NUM_AUDIO_BUFFERS = 3;
-int SAMPLES_PER_BUFFER = 256;
+int SAMPLES_PER_BUFFER = 32;
 audio_buffer_pool_t *producer_pool = nullptr;
 
-const int NUM_OSCILLATORS = 12;
 // Arrays for our carrier oscillators and LFOs
-daisysp::Oscillator carrier_osc[NUM_OSCILLATORS];
-daisysp::Oscillator lfo_mod[NUM_OSCILLATORS];
-    const float lfo_min_freq = 0.011f;
-    const float lfo_max_freq = .3f;
-int scale[48] = {
-    // Pentatonic 
-    0, 0, 3, 3, 5, 5, 7, 9, 10, 10, 12, 12, 15, 15, 17, 17,
-    19, 21, 22, 22, 24, 24, 27, 29, 29, 31, 32, 32, 34, 34, 36, 36,
-    39, 39, 41, 41, 43, 43, 46, 46, 48, 48, 51, 53, 53, 53, 53, 53};
+rpdsp::SineOscillator osc1;
+rpdsp::SineOscillator osc2;
 
-int change = 1;
 void initOscillators()
 {
 
-    // Loop to initialize all oscillators
-    for (int i = 0; i < NUM_OSCILLATORS; i++)
-    {
+  
         // --- Initialize Carrier Oscillators ---
-        carrier_osc[i].Init(SAMPLE_RATE);
-        carrier_osc[i].SetWaveform(daisysp::Oscillator::WAVE_SIN);
+        osc1.prepare(SAMPLE_RATE);
+        osc2.prepare(SAMPLE_RATE);
         // Convert MIDI note to frequency
-        carrier_osc[i].SetFreq(daisysp::mtof(scale[i*2 ] + 56));
-        // Initial amplitude will be controlled by LFO, but we set it here for safety.
-        carrier_osc[i].SetAmp(0.5f);
+osc1.setFreq(220.f);
+osc2.setFreq(720.f);
 
-        // --- Initialize LFO Modulators ---
-        lfo_mod[i].Init(SAMPLE_RATE);
-        lfo_mod[i].SetWaveform(daisysp::Oscillator::WAVE_SIN);
-        // Linearly distribute LFO frequencies from min to max
-        float lfo_freq = lfo_min_freq + (static_cast<float>(i) / (NUM_OSCILLATORS - 1)) * (lfo_max_freq - lfo_min_freq);
-        lfo_mod[i].SetFreq(lfo_freq);
-        // LFO amplitude is 1.0 so its output is a full [-1.0, 1.0]
-        lfo_mod[i].SetAmp(1.0f);
     }
-}
+
 // --- Audio Buffer Conversion ---
 static inline int16_t convertSampleToInt16(float sample)
 {
     float scaled = sample * INT16_MAX_AS_FLOAT;
     scaled = roundf(scaled);
-    scaled = daisysp::fclamp(scaled, INT16_MIN_AS_FLOAT, INT16_MAX_AS_FLOAT);
+    scaled = rpdsp::clamp(scaled, INT16_MIN_AS_FLOAT, INT16_MAX_AS_FLOAT);
     return static_cast<int16_t>(scaled);
 }
 
@@ -71,33 +55,15 @@ void fill_audio_buffer(audio_buffer_t *buffer)
     for (int i = 0; i < N; ++i)
     {
 
-        float mixed_signal = 0.f;
 
-        // Process and sum all 16 oscillators
-        for (int j = 0; j < NUM_OSCILLATORS; j++)
-        {
-            // Get the LFO value, which is in the range [-1.0, 1.0]
-            float lfo_out = lfo_mod[j].Process();
+      float mixed_signal= 
 
-            // Remap the LFO output to the range [0.0, 1.0] for amplitude control
-            // (lfo_out + 1) / 2 moves [-1, 1] to [0, 2] and then to [0, 1]
-            float amp_mod = (lfo_out + 1.0f) * 0.5f;
-
-            // Set the carrier oscillator's amplitude to the LFO's value
-            carrier_osc[j].SetAmp(amp_mod);
-
-            // Get the carrier's signal and add it to our mix
-            mixed_signal += carrier_osc[j].Process();
-        }
-
-        // Attenuate the mixed signal to prevent clipping by dividing by the number of oscillators.
-        // This is a simple but effective mixing strategy.
-        mixed_signal *= 0.05f;
+        mixed_signal *= 0.3f;
 
         // Set the left and right output channels to the final mixed signal
 
-        out[2 * i + 0] = convertSampleToInt16(mixed_signal);
-        out[2 * i + 1] = convertSampleToInt16(mixed_signal);
+        out[2 * i + 0] = convertSampleToInt16(osc1.process());
+        out[2 * i + 1] = convertSampleToInt16(osc2.process());
     }
 
     buffer->sample_count = N;
