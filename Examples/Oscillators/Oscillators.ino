@@ -12,11 +12,11 @@ int PICO_AUDIO_I2S_DATA_PIN = 15;
 int PICO_AUDIO_I2S_CLOCK_PIN_BASE = 16; //  Pico forces you to use BasePin + 1 for the LRCK so LRCK is 17
 
 
-float SAMPLE_RATE = 44100.0f;
+float SAMPLE_RATE = 48000.0f;
 float INT16_MAX_AS_FLOAT = 32767.0f;
 float INT16_MIN_AS_FLOAT = -32768.0f;
 int NUM_AUDIO_BUFFERS = 3;
-int SAMPLES_PER_BUFFER = 256;
+int SAMPLES_PER_BUFFER = 32;
 audio_buffer_pool_t *producer_pool = nullptr;
 
 const int NUM_OSCILLATORS = 12;

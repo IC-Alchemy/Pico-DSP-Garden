@@ -24,11 +24,11 @@ int PICO_AUDIO_I2S_DATA_PIN       = 15;
 int PICO_AUDIO_I2S_CLOCK_PIN_BASE = 16; // LRCK=16, BCLK=17
 
 // ─── Audio engine constants ───────────────────────────────────────────────────
-const float SAMPLE_RATE      = 44100.0f;
+const float SAMPLE_RATE      = 48000.0f;
 const float INT16_MAX_F      = 32767.0f;
 const float INT16_MIN_F      = -32768.0f;
 const int   NUM_AUDIO_BUFFERS  = 3;
-const int   SAMPLES_PER_BUFFER = 256;
+const int   SAMPLES_PER_BUFFER = 32;
 
 audio_buffer_pool_t *producer_pool = nullptr;
 

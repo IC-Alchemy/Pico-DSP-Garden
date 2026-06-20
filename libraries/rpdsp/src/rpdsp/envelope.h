@@ -99,7 +99,7 @@ public:
   [[nodiscard]] float value() const { return value_; }
 
 private:
-  static constexpr float kDefaultSampleRate = 44100.0f;
+  static constexpr float kDefaultSampleRate = 48000.0f;
 
   static float clamp01(float value) {
     return std::clamp(value, 0.0f, 1.0f);

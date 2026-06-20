@@ -76,15 +76,6 @@ Examples/*/build/
 
 This is the most insidious issue — your **non-ignored** docs (`realtime_rules.md`, `algorithm_catalog.md`, `rp2350_tuning.md`) reference types and files that **do not exist in `dsp/`**:
 
-| Documented (as `rpdsp::…`) | Actually in `dsp/`? |
-|---|---|
-| `DefaultAudioBlock`, `AudioBlock<Capacity>` | ❌ no block container type exists |
-| `MidiByteParser`, `MidiNoteEvent`, `MidiControlEvent` | ❌ none |
-| `SmoothedAdcParameter`, `ParameterCurve` | ❌ none |
-| `GateDebouncer` | ❌ none |
-| `CallbackPerformanceMeter` | ❌ none |
-| `PioI2sAudio` (rp2350_tuning.md L84) | ❌ not in `audio/` |
-| `examples/oscillator_gallery.cpp`, etc. | ❌ path wrong — they're in `Docs/example_Ideas/`, which AGENTS.md says to *ignore* |
 
 Also the **baseline parameters in the docs contradict every example**:
 - Docs: "approved baseline is 48 kHz, 32-sample blocks" (algorithm_catalog L3, rp2350_tuning L3, realtime_rules L3).
@@ -107,43 +98,8 @@ Either way, the current state actively misleads agents and contributors (AGENTS.
 
 ---
 
-## 6. Duplicated example boilerplate (separate from §1)
-
-Even setting aside the `src/` copies, every `.ino` reimplements the same scaffolding four different ways, and they've already drifted stylistically:
-- `float_to_int16` exists in 3 examples under 3 names (`float_to_int16`, `convertSampleToInt16`, `toInt16`) with subtly different behavior (`roundf` in 2, not in the 3rd).
-- I2S setup helper duplicated 4× — `Oscillators.ino` has leftover debug spam (`"We are melting!!!!!"`, `delay(1000)` inside an RT setup path), while `SuperSaw.ino`/`SimpleOscillators.ino` have a clean version.
-- Pin constants declared `int` in two examples, `static const int` in the other two.
-
-**Fix:** This scaffolding (I2S init, `float_to_int16`, the `producer_pool` loop) belongs in the shared `audio` library as a tiny `PicoDspGarden` helper — then each example shrinks to ~30 lines of *just its DSP*.
 
 ---
-
-## 7. Flat `dsp/` layout has no internal organization
-
-**Evidence:** 16 headers in one flat directory spanning oscillators, filters, dynamics, effects, envelopes, sequencing utilities, and UI helpers (`knob_bank.h`, `pickup_knob.h`, `joystick_recorder.h`). Once promoted to a real library (§1), group them:
-
-```
-rpdsp/src/rpdsp/
-  synthesis/   oscillator.h, voice.h, noise...
-  filters/     filter.h
-  dynamics/    dynamics.h
-  effects/     effects.h, delay_line.h
-  modulators/  envelope.h, parameter_smoother.h
-  sequencing/  rhythm_sequencer.h, gate_pattern.h
-  ui/          knob_bank.h, pickup_knob.h, joystick_recorder.h
-  core/        config.h, algorithm.h, realtime.h
-```
-
-This also gives you room for the missing block framework from §4 (`core/audio_block.h`).
-
----
-
-## 8. Project is hardcoded to SuperSaw as "the" sketch
-
-`.vscode/arduino.json`, `build/build.options.json`, and the committed `build/` all point at `Examples/SuperSaw/`. There's no way to build another example without editing tracked files. Once §2 removes the committed `build/`, the `.vscode` example should be a template, and each example directory should be independently openable (Arduino convention already supports this).
-
----
-
 ## 9. Minor / lower-priority
 
 - `Docs/example_Ideas/` (21 files) — AGENTS.md says "IGNORE" but the canonical `algorithm_catalog.md` *cites files that live there*. Either fold them into real `Examples/` or move them out of Docs into an `attic/` and stop referencing them from shipped docs.

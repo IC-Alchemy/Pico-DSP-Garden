@@ -11,21 +11,31 @@
   },
   {
     "Sourcefile": "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\build\\sketch\\SuperSaw.ino.cpp",
+    "Include": "rpdsp.h",
+    "Includepath": "C:\\Users\\Blasto\\Documents\\Arduino\\libraries\\rpdsp\\src"
+  },
+  {
+    "Sourcefile": "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\build\\sketch\\SuperSaw.ino.cpp",
+    "Include": "pico_audio_i2s.h",
+    "Includepath": "C:\\Users\\Blasto\\Documents\\Arduino\\libraries\\pico_audio_i2s\\src"
+  },
+  {
+    "Sourcefile": "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\build\\sketch\\SuperSaw.ino.cpp",
     "Include": "",
     "Includepath": null
   },
   {
-    "Sourcefile": "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\build\\sketch\\src\\audio\\audio.cpp",
+    "Sourcefile": "C:\\Users\\Blasto\\Documents\\Arduino\\libraries\\pico_audio_i2s\\src\\pico_audio_i2s\\audio.cpp",
     "Include": "",
     "Includepath": null
   },
   {
-    "Sourcefile": "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\build\\sketch\\src\\audio\\audio_i2s.c",
+    "Sourcefile": "C:\\Users\\Blasto\\Documents\\Arduino\\libraries\\pico_audio_i2s\\src\\pico_audio_i2s\\audio_i2s.c",
     "Include": "",
     "Includepath": null
   },
   {
-    "Sourcefile": "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\build\\sketch\\src\\audio\\buffer.c",
+    "Sourcefile": "C:\\Users\\Blasto\\Documents\\Arduino\\libraries\\pico_audio_i2s\\src\\pico_audio_i2s\\buffer.c",
     "Include": "",
     "Includepath": null
   }

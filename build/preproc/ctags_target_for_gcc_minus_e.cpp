@@ -7,10 +7,15 @@
 // arpeggiating a 32-step sequence. Built entirely on the rpdsp library.
 //
 
-# 10 "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\Examples\\SuperSaw\\SuperSaw.ino" 2
-# 11 "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\Examples\\SuperSaw\\SuperSaw.ino" 2
+// Library discovery triggers — arduino-cli detects libraries via root-level src/ headers.
+// Once loaded, src/ is on the include path so the namespaced headers below resolve.
 # 12 "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\Examples\\SuperSaw\\SuperSaw.ino" 2
 # 13 "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\Examples\\SuperSaw\\SuperSaw.ino" 2
+
+# 15 "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\Examples\\SuperSaw\\SuperSaw.ino" 2
+# 16 "Z:\\Codezzz\\MusicCode\\Pico-DSP-Garden\\Examples\\SuperSaw\\SuperSaw.ino" 2
+
+
 
 // ---------------------------------------------------------------------------
 // I2S pin assignment (see AGENTS.md wiring convention)
@@ -159,11 +164,15 @@ void setup1()
     Serial.print ("[CORE1] Sample rate: ");
     Serial.println(SAMPLE_RATE);
     Serial.println("[CORE1] Sequence:    32-step arpeggio");
-        hypersaw.setFreq(rpdsp::midiNoteToHz(static_cast<float>(SCALE[note_index] + 48)));
-
 }
 
 void loop1()
 {
+    hypersaw.setFreq(rpdsp::midiNoteToHz(static_cast<float>(SCALE[note_index] + 48)));
 
+    // Blocking delay here is fine: Core 0 owns the real-time audio path and
+    // never touches Core 1. In a real sequencer you'd schedule on a timer.
+    delay(122);
+
+    note_index = (note_index + 1) % SCALE_LENGTH;
 }
