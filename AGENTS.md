@@ -28,7 +28,7 @@ earle-philhower **arduino-pico** core (not `arduino:mbed_rp2040`).
 - [architecture.md](AGENTS/architecture.md) — canonical paths, promoted modules, licensing
 - [rpdsp-api.md](AGENTS/rpdsp-api.md) — `prepare`/`process`, anti-aliasing, block size
 - [audio-runtime.md](AGENTS/audio-runtime.md) — callback contract, dual-core split, I2S pins
-- [gotchas.md](AGENTS/gotchas.md) — sample-rate variance, non-authoritative dirs
+- [gotchas.md](AGENTS/gotchas.md) — sample rate, dual-core split, non-authoritative dirs
 
 ## Reference docs in the repo
 
@@ -36,4 +36,5 @@ earle-philhower **arduino-pico** core (not `arduino:mbed_rp2040`).
 - `Docs/rp2350_tuning.md` — CPU/memory/latency budgets, dual-core guidance
 - `Docs/algorithm_catalog.md` — DSP algorithm reference
 - `README.md` — hardware wiring, dual-core pattern overview
-- **Ignore** `Docs/example_Ideas/` — not reference material.
+- `Docs/roadmap.md` — aspirational APIs (block framework, codec bridges) and
+  sketch ideas. Not yet implemented; not reference material for current code.
