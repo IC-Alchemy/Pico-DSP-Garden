@@ -19,37 +19,23 @@ int NUM_AUDIO_BUFFERS = 3;
 int SAMPLES_PER_BUFFER = 32;
 audio_buffer_pool_t *producer_pool = nullptr;
 
-const int NUM_OSCILLATORS = 12;
 // Arrays for our carrier oscillators and LFOs
-rpdsp::SineOscillator carrier_osc[NUM_OSCILLATORS];
-rpdsp::SineOscillator lfo_mod[NUM_OSCILLATORS];
-    const float lfo_min_freq = 0.011f;
-    const float lfo_max_freq = .3f;
-int scale[48] = {
-    // Pentatonic 
-    0, 0, 3, 3, 5, 5, 7, 9, 10, 10, 12, 12, 15, 15, 17, 17,
-    19, 21, 22, 22, 24, 24, 27, 29, 29, 31, 32, 32, 34, 34, 36, 36,
-    39, 39, 41, 41, 43, 43, 46, 46, 48, 48, 51, 53, 53, 53, 53, 53};
+rpdsp::SineOscillator osc1;
+rpdsp::SineOscillator osc2;
 
-int change = 1;
 void initOscillators()
 {
 
-    // Loop to initialize all oscillators
-    for (int i = 0; i < NUM_OSCILLATORS; i++)
-    {
+  
         // --- Initialize Carrier Oscillators ---
-        carrier_osc[i].prepare(SAMPLE_RATE);
+        osc1.prepare(SAMPLE_RATE);
+        osc2.prepare(SAMPLE_RATE);
         // Convert MIDI note to frequency
-        carrier_osc[i].setFreq(rpdsp::midiNoteToHz(scale[i*2] + 56));
+osc1.setFreq(220.f);
+osc2.setFreq(720.f);
 
-        // --- Initialize LFO Modulators ---
-        lfo_mod[i].prepare(SAMPLE_RATE);
-        // Linearly distribute LFO frequencies from min to max
-        float lfo_freq = lfo_min_freq + (static_cast<float>(i) / (NUM_OSCILLATORS - 1)) * (lfo_max_freq - lfo_min_freq);
-        lfo_mod[i].setFreq(lfo_freq);
     }
-}
+
 // --- Audio Buffer Conversion ---
 static inline int16_t convertSampleToInt16(float sample)
 {
@@ -69,30 +55,13 @@ void fill_audio_buffer(audio_buffer_t *buffer)
     for (int i = 0; i < N; ++i)
     {
 
-        float mixed_signal = 0.f;
 
-        // Process and sum all 16 oscillators
-        for (int j = 0; j < NUM_OSCILLATORS; j++)
-        {
-            // Get the LFO value, which is in the range [-1.0, 1.0]
-            float lfo_out = lfo_mod[j].process();
-
-            // Remap the LFO output to the range [0.0, 1.0] for amplitude control
-            // (lfo_out + 1) / 2 moves [-1, 1] to [0, 2] and then to [0, 1]
-            float amp_mod = (lfo_out + 1.0f) * 0.5f;
-
-            // Get the carrier's signal, scale by the LFO amplitude, and add it to our mix
-            mixed_signal += carrier_osc[j].process() * amp_mod;
-        }
-
-        // Attenuate the mixed signal to prevent clipping by dividing by the number of oscillators.
-        // This is a simple but effective mixing strategy.
-        mixed_signal *= 0.05f;
+    
 
         // Set the left and right output channels to the final mixed signal
 
-        out[2 * i + 0] = convertSampleToInt16(mixed_signal);
-        out[2 * i + 1] = convertSampleToInt16(mixed_signal);
+        out[2 * i + 0] = convertSampleToInt16(osc1.process());
+        out[2 * i + 1] = convertSampleToInt16(osc2.process());
     }
 
     buffer->sample_count = N;
