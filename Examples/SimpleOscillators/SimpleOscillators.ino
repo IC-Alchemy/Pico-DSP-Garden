@@ -8,9 +8,13 @@
 // timbre while the pitch stays musical.
 //
 
-#include "src/audio/audio.h"
-#include "src/audio/audio_i2s.h"
-#include "src/dsp/oscillator.h"
+// Library discovery triggers — arduino-cli detects libraries via root-level src/ headers.
+#include <rpdsp.h>
+#include <pico_audio_i2s.h>
+
+#include <pico_audio_i2s/audio.h>
+#include <pico_audio_i2s/audio_i2s.h>
+#include <rpdsp/oscillator.h>
 
 // ---------------------------------------------------------------------------
 // I2S pin assignment (see AGENTS.md wiring convention)

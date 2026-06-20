@@ -6,10 +6,15 @@
 // arpeggiating a 32-step sequence. Built entirely on the rpdsp library.
 //
 
-#include "src/audio/audio.h"
-#include "src/audio/audio_i2s.h"
-#include "src/dsp/oscillator.h"
-#include "src/dsp/SuperSaw.h"
+// Library discovery triggers — arduino-cli detects libraries via root-level src/ headers.
+// Once loaded, src/ is on the include path so the namespaced headers below resolve.
+#include <rpdsp.h>
+#include <pico_audio_i2s.h>
+
+#include <pico_audio_i2s/audio.h>
+#include <pico_audio_i2s/audio_i2s.h>
+#include <rpdsp/oscillator.h>
+#include <rpdsp/hypersaw.h>
 
 // ---------------------------------------------------------------------------
 // I2S pin assignment (see AGENTS.md wiring convention)
