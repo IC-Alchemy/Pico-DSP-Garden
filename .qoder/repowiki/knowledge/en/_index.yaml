@@ -1,17 +1,19 @@
 # 知识卡导出索引文件
 schema_version: 1
 locale: en-US
-branch: main
-exported_at: "2026-06-19T23:06:07Z"
+branch: v2
+exported_at: "2026-06-19T23:12:05Z"
 modules:
     "":
-        dir_name: Pico DSP Audio Synthesis Framework
-        title: Pico DSP Audio Synthesis Framework
+        dir_name: RP2040 Real-Time Audio Synthesis Platform
+        title: RP2040 Real-Time Audio Synthesis Platform
         scope:
             - README.md
             - .github\skills\README.md
             - .gitignore
             - .kilo\plans\1781859591788-migrate-rpdsp-from-daisysp.md
+            - .qoder\agents\builtin\qa.md
+            - .qoder\agents\ic-alchemy-voice.md
             - .vscode\arduino.json
             - .vscode\c_cpp_properties.json
             - AGENTS.md
@@ -138,36 +140,36 @@ modules:
         children: []
         depends_on: []
         related_to: []
-    audio:
-        dir_name: Audio Output & I2S Driver
-        title: Audio Output & I2S Driver
+    audio_library:
+        dir_name: Audio Output & Buffer Management
+        title: Audio Output & Buffer Management
         scope:
             - audio/
         source_files: []
         children: []
         depends_on: []
         related_to:
-            - path: dsp
             - path: examples
-    dsp:
-        dir_name: Real-time Audio DSP & Synthesis Engine
-        title: Real-time Audio DSP & Synthesis Engine
+            - path: dsp_library
+    dsp_library:
+        dir_name: Real-time Audio DSP Library
+        title: Real-time Audio DSP Library
         scope:
             - dsp/
         source_files: []
         children: []
         depends_on: []
         related_to:
-            - path: audio
             - path: examples
+            - path: audio_library
     examples:
-        dir_name: Pico DSP Audio Synthesis Examples
-        title: Pico DSP Audio Synthesis Examples
+        dir_name: RP2040 Audio Synthesis Examples
+        title: RP2040 Audio Synthesis Examples
         scope:
             - Examples/
         source_files: []
         children: []
         depends_on: []
         related_to:
-            - path: dsp
-            - path: audio
+            - path: audio_library
+            - path: dsp_library

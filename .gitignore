@@ -49,3 +49,4 @@ AGENTS.md
 build/includes.cache
 build/libraries.cache
 build/includes.cache
+.qoder/*

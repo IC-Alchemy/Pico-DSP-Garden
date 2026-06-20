@@ -1,1 +1,0 @@
-Header-only C++17 using `<cmath>` and `<array>`; relies on template metaprogramming for fixed-capacity buffers (`DelayLine`, `GatePattern`) to avoid heap allocation during audio processing.

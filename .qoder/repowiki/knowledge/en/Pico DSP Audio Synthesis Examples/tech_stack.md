@@ -1,2 +1,0 @@
-- Integrates `DaisySP` library components (e.g., `daisysp::Hypersaw`, `daisysp::Oscillator`) alongside custom `rpdsp` namespace implementations for band-limited oscillators.
-- Uses Raspberry Pi Pico SDK's `pico-audio` and PIO (Programmable I/O) for low-latency I2S output via `audio_i2s.c/h` and `.pio` assembly files.

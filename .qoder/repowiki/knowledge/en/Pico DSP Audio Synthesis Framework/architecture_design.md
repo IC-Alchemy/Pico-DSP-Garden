@@ -1,3 +1,0 @@
-- **Dual-Core Orchestration**: Core 0 executes the real-time audio callback (filling buffers via `take_audio_buffer`/`give_audio_buffer`) while Core 1 handles non-blocking tasks like sequencing or UI, communicating via `volatile` shared state.
-- **Source-Copy Convention**: Each example sketch maintains local copies of the canonical `audio/` and `dsp/` directories in its `src/` tree, ensuring self-containment for the Arduino IDE build system without symlinks or complex dependency management.
-- **DSP-Audio Boundary**: The header-only `rpdsp` library (namespace `rpdsp`) provides synthesis primitives that are instantiated and processed within the audio callback, with output samples converted to 16-bit integers for the DMA-driven I2S driver.
