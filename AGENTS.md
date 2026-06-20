@@ -5,13 +5,17 @@ Pico-DSP-Garden — an embedded audio DSP framework for RP2350/RP2040
 earle-philhower **arduino-pico** core (not `arduino:mbed_rp2040`).
 
 > **Local guidance, not shipped.** This file and the `AGENTS/` directory are
-> gitignored. They are agent instructions, not part of the published repo.
+> agent instructions, not part of the published library API.
 
 ## Critical — read first
 
-- **No host build, no test framework, no CI, no CMake/PlatformIO.** Do not invent
-  test/lint/typecheck commands; none exist. Verification = *compile the sketch,
-  flash, listen.* See [build.md](AGENTS/build.md).
+- **Host tests live in `tests/`** (CMake + doctest). Build and run with
+  `cmake -S tests -B tests/build && cmake --build tests/build && ctest --test-dir tests/build`.
+  **Firmware builds via `arduino-cli`** — `scripts/build_all_examples.sh`
+  (or `.ps1`) compiles every example. **CI** runs both on push/PR via
+  `.github/workflows/`. Verification of audio behavior is still "flash and
+  listen"; the host suite catches compile errors and math regressions before
+  flashing. See [build.md](AGENTS/build.md).
 - **Libraries are the single source of truth.** Edit `libraries/rpdsp` and
   `libraries/pico_audio_i2s` directly — there are no per-example `src/` copies.
   All examples pick up changes via `--library` build flags. See
