@@ -53,3 +53,6 @@ build/libraries.cache
 build/includes.cache
 .qoder/*
 build\*
+build/compile_commands.json
+build/build.options.json
+.vscode/arduino.json
