@@ -46,7 +46,8 @@ cmake_install.cmake
 build/*
 AGENTS.md
 .github/skills/README.md
-build/includes.cache
+build/*
 build/libraries.cache
 build/includes.cache
 .qoder/*
+build\*

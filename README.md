@@ -15,7 +15,7 @@ Pico-DSP-Garden is an open-source C++ framework for building audio DSP projects 
 
 ## Hardware
 
-- Raspberry Pi Pico or Pico W (RP2040 or RP2350)
+- Raspberry Pi Pico2  (RP2350)
 - PCM510x or compatible I2S DAC
 - Basic audio output circuit
 
@@ -68,15 +68,6 @@ void loop1() {
 }
 ```
 
-### DaisySP in the callback
-
-```cpp
-hypersaw.SetDetune(detune_mod);
-hypersaw.SetMix(mix_mod);
-float signal = hypersaw.Process();
-```
-
-Add oscillators, LFOs, filters, and effects directly in the audio callback. DaisySP handles the math.
 
 ## Example projects
 
@@ -84,17 +75,3 @@ Add oscillators, LFOs, filters, and effects directly in the audio callback. Dais
 - **Oscillators** — Multiple waveform types with buffer management walkthrough
 - More in `Examples/`
 
-## License
-
-BSD-3-Clause. See [LICENSE](LICENSE).
-
-## Built on the shoulders of
-
-- Audio driver based on Raspberry Pi Trading Ltd's reference I2S implementation
-- DSP by [DaisySP](https://github.com/electro-smith/DaisySP) (Electrosmith)
-- Timing by [µClock](https://github.com/midilab/uClock) (Midilab)
-- Synthesis algorithms from [Mutable Instruments](https://github.com/pichenettes/eurorack) (Émilie Gillet)
-
----
-
-*Part of the IC Alchemy open firmware ecosystem. Pico-DSP-Garden powers the synthesis engine in [Pico2Seq](https://github.com/IC-Alchemy/Pico2Seq).*

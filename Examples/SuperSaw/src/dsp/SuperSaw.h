@@ -1,209 +1,133 @@
 #pragma once
-#ifndef HYPERSAW_H
-#define HYPERSAW_H
+#ifndef RPDSP_HYPERSAW_H
+#define RPDSP_HYPERSAW_H
 
-#include <cmath>
-#include <cstdlib>
+#include "algorithm.h"
+#include "filter.h"
 #include "oscillator.h"
-#include "svf.h"
+#include "realtime.h"
 
-namespace daisysp
-{
-/** @brief Hypersaw Oscillator based on the Roland JP-8000 Super Saw.
- *  based on research by Adam Szabo.
- * @date June 2024
+#include <algorithm>
+#include <cmath>
+
+namespace rpdsp {
+
+/** @brief Hypersaw ("Super Saw") oscillator built on rpdsp primitives.
  *
- * This class implements a hypersaw oscillator as detailed in Adam Szabo's paper,
- * "How to Emulate the Super Saw". It consists of seven sawtooth oscillators:
- * one central oscillator and six detuned oscillators.
+ * Seven detuned band-limited sawtooth oscillators after the Roland JP-8000
+ * Super Saw, based on Adam Szabo's "How to Emulate the Super Saw" research:
+ * one center oscillator plus six detuned side oscillators.
  *
- * The implementation includes:
- * - Non-linear detuning curve for authentic frequency spreading.
- * - Unique mix control that adjusts the balance between the center and side oscillators.
- * - A pitch-tracked high-pass filter to replicate the original's tonal character.
- * - Free-running oscillators with randomized phase on trigger for a dynamic, evolving sound.
+ *   - Non-linear (x^4) detune curve for authentic frequency spreading.
+ *   - Mix control that balances center vs. side voices using the paper's
+ *     gain curves, so mix actually changes the timbre.
+ *   - A pitch-tracked StateVariableFilter run as a high-pass to shape the
+ *     spectrum like the original.
+ *   - Free-running voices with randomized phase on trigger().
+ *
+ * Each voice is a SecondOrderBSplineSawOscillator, the rpdsp band-limited
+ * saw (the equivalent of a POLYBLEP saw), so there is no separate waveform
+ * enum to set.
  */
-class Hypersaw
-{
-  public:
-    Hypersaw() {}
-    ~Hypersaw() {}
+class Hypersaw {
+ public:
+  static constexpr int kVoiceCount = 7;
+  static constexpr int kCenterIndex = 3;
+  static constexpr int kSideCount = 6;
 
-    /** Initializes the Hypersaw module.
-     * * @param sample_rate The audio sample rate in Hz.
-     */
-    void Init(float sample_rate)
-    {
-        sample_rate_ = sample_rate;
-        freq_         = 100.f; // Default frequency
-        detune_       = 0.5f;
-        mix_          = 0.5f;
+  void prepare(float sampleRate) {
+    sampleRate_ = safeSampleRate(sampleRate);
+    for (int i = 0; i < kVoiceCount; ++i) {
+      voices_[i].prepare(sampleRate_);
+    }
+    hpf_.prepare(sampleRate_);
+    hpf_.setResonance(0.1f);  // low resonance: spectral shaping, not resonance
+    trigger();                // randomized free-running phases
+    updateCoefficients();
+  }
 
-        for(int i = 0; i < 7; i++)
-        {
-            oscs_[i].Init(sample_rate_);
-            oscs_[i].SetWaveform(Oscillator::WAVE_SAW);
-        }
+  void reset() {
+    for (int i = 0; i < kVoiceCount; ++i) {
+      voices_[i].reset(0.0f);
+    }
+    hpf_.reset();
+  }
 
-        hpf_.Init(sample_rate_);
-        hpf_.SetRes(0.1f); // Low resonance as it's for spectral shaping
-        hpf_.SetDrive(0.8f);
+  /** Randomize each voice's phase to simulate a fresh note trigger. */
+  void trigger() {
+    for (int i = 0; i < kVoiceCount; ++i) {
+      voices_[i].reset((rng_.nextBipolar() * 0.5f) + 0.5f);
+    }
+  }
 
-        Trigger(); // Set initial random phases
-        UpdateCoefficients();
+  void setFreq(float freq) {
+    freq_ = std::max(0.0f, freq);
+    updateCoefficients();
+  }
+
+  /** Detune amount in [0, 1]; passed through a non-linear curve internally. */
+  void setDetune(float detune) {
+    detune_ = clamp(detune, 0.0f, 1.0f);
+    updateCoefficients();
+  }
+
+  /** Mix in [0, 1]: balances the center voice against the side voices. */
+  void setMix(float mix) {
+    mix_ = clamp(mix, 0.0f, 1.0f);
+    updateCoefficients();
+  }
+
+  float process() {
+    // Advance every voice every sample so their phases stay free-running.
+    float sideSum = 0.0f;
+    for (int i = 0; i < kSideCount; ++i) {
+      sideSum += voices_[sideIndices_[i]].process();
+    }
+    const float center = voices_[kCenterIndex].process();
+
+    const float sum = (sideSum * sideGain_) + (center * centerGain_);
+    return hpf_.process(sum / 4.5f).highpass;
+  }
+
+ private:
+  void updateCoefficients() {
+    // Gains from the paper: center falls linearly, sides follow a parabola.
+    centerGain_ = -0.55366f * mix_ + 0.99785f;
+    sideGain_ = -0.73764f * mix_ * mix_ + 1.2841f * mix_ + 0.044372f;
+
+    // Non-linear detune (x^4) for the authentic spreading curve.
+    const float scaledDetune =
+        clamp(detune_ * detune_ * detune_ * detune_, 0.0f, 1.0f);
+
+    voices_[kCenterIndex].setFreq(freq_);
+    for (int i = 0; i < kSideCount; ++i) {
+      const float detuneFactor = 1.0f + scaledDetune * detuneRatios_[i];
+      voices_[sideIndices_[i]].setFreq(freq_ * detuneFactor);
     }
 
-    /** Processes the oscillator and returns the next sample.
-     *
-     * @return The next floating point sample of the oscillator.
-     */
-    float Process()
-    {
-        float sum = 0.f;
+    // Pitch-track the high-pass to the fundamental.
+    hpf_.setCutoff(freq_);
+  }
 
-        // Process side oscillators
-        float side_sum = 0.f;
-        side_sum += oscs_[0].Process();
-        side_sum += oscs_[1].Process();
-        side_sum += oscs_[2].Process();
-        side_sum += oscs_[4].Process();
-        side_sum += oscs_[5].Process();
-        side_sum += oscs_[6].Process();
+  // Side voice indices within the 7-voice array (center sits at index 3).
+  static constexpr int sideIndices_[kSideCount] = {0, 1, 2, 4, 5, 6};
+  // Detune ratios for the six side voices relative to the center.
+  static constexpr float detuneRatios_[kSideCount] = {
+      -0.11002313f, -0.06288439f, -0.01952356f,
+       0.01991221f,  0.06216538f,  0.10745242f};
 
-        // Add side oscillators with their gain
-        sum += side_sum ;
+  float sampleRate_ = kDefaultSampleRate;
+  float freq_ = 100.0f;
+  float detune_ = 0.5f;
+  float mix_ = 0.5f;
+  float sideGain_ = 0.5f;
+  float centerGain_ = 1.0f;
 
-        // Add center oscillator with its gain
-        sum += oscs_[3].Process();
-
-        // Apply high-pass filter and return the filtered output
-        hpf_.Process(sum / 4.5f);
-        return hpf_.High();
-    }
-
-    /** Sets the fundamental frequency of the oscillator.
-     * * @param freq The frequency in Hz.
-     */
-    void SetFreq(float freq)
-    {
-        freq_ = freq;
-        UpdateCoefficients();
-    }
-
-    /** Sets the detune amount.
-     *
-     * The detune parameter is passed through a non-linear curve
-     * to approximate the behavior of the original hardware.
-     * * @param detune A value from 0.0 to 1.0.
-     */
-    void SetDetune(float detune)
-    {
-        detune_ = fclamp(detune, 0.f, 1.f);
-        UpdateCoefficients();
-    }
-
-    /** Sets the mix between the center and side oscillators.
-     *
-     * As mix increases, the side oscillators get louder and the center
-     * oscillator gets quieter, following specific curves from the paper.
-     *
-     * @param mix A value from 0.0 to 1.0.
-     */
-    void SetMix(float mix)
-    {
-        mix_ = fclamp(mix, 0.f, 1.f);
-        UpdateCoefficients();
-    }
-    /** Sets the base waveform for all seven oscillators simultaneously.
-     *
-     * @param waveform The desired waveform (use Oscillator::WAVE_SAW or Oscillator::WAVE_RAMP).
-     */
-    void SetAllWaveforms(uint8_t waveform)
-    {
-        for (int i = 0; i < 7; i++)
-        {
-            oscs_[i].SetWaveform(waveform);
-        }
-    }
-
-    /** Sets the base waveform for a single specified oscillator.
-     *
-     * @param index The index of the oscillator to modify (0-6).
-     * @param waveform The desired waveform (use Oscillator::WAVE_SAW or Oscillator::WAVE_RAMP).
-     */
-    void SetWaveform(int index, uint8_t waveform)
-    {
-        if (index >= 0 && index < 7)
-        {
-            oscs_[index].SetWaveform(waveform);
-        }
-    }
-
-
-    /** Simulates a new note trigger by randomizing the phase of each oscillator.
-     * This creates the "free-running" characteristic of the original.
-     */
-    void Trigger()
-    {
-        for(int i = 0; i < 7; i++)
-        {
-            oscs_[i].Reset(static_cast<float>(rand()) / static_cast<float>(RAND_MAX));
-        }
-    }
-
-
-  private:
-    /** Updates the internal frequencies and gains based on the public parameters.
-     */
-    void UpdateCoefficients()
-    {
-        // 1. Calculate gains from the mix parameter
-        // Center oscillator gain (linear decrease)
-        center_gain_ = -0.55366f * mix_ + 0.99785f;
-        
-        // Side oscillators gain (parabolic curve)
-        side_gain_ = -0.73764f * mix_ * mix_ + 1.2841f * mix_ + 0.044372f;
-
-
-        // 2. Calculate the non-linear detune amount (simplified x^4)
-        float scaled_detune = detune_ * detune_ * detune_ * detune_;
-        scaled_detune = fclamp(scaled_detune, 0.f, 1.f);
-
-        // 3. Set frequencies for all oscillators
-        oscs_[3].SetFreq(freq_); // Center oscillator
-
-        for(int i = 0; i < 6; i++)
-        {
-            int osc_idx = (i < 3) ? i : i + 1; // Skip center osc index 3
-            float detune_factor = 1.0f + scaled_detune * detune_ratios_[i];
-            oscs_[osc_idx].SetFreq(freq_ * detune_factor);
-        }
-
-        // 4. Set the high-pass filter cutoff to track the fundamental frequency
-        hpf_.SetFreq(freq_);
-    }
-
-    // Array of 7 sawtooth oscillators
-    Oscillator oscs_[7];
-    // Pitch-tracked high-pass filter
-    Svf        hpf_;
-
-    float sample_rate_;
-    float freq_;
-    float detune_;
-    float mix_;
-
-    float side_gain_;
-    float center_gain_;
-    
-    // Detune ratios for the 6 side oscillators, derived from the paper.
-    // Values are for osc 1, 2, 3, 5, 6, 7 relative to the center osc (4).
-    static constexpr float detune_ratios_[6] = {
-        -0.11002313f, -0.06288439f, -0.01952356f,
-         0.01991221f,  0.06216538f,  0.10745242f
-    };
+  SecondOrderBSplineSawOscillator voices_[kVoiceCount];
+  StateVariableFilter hpf_;
+  XorShift32 rng_;
 };
 
-} // namespace daisysp
+}  // namespace rpdsp
 
-#endif // HYPERSAW_H
+#endif  // RPDSP_HYPERSAW_H

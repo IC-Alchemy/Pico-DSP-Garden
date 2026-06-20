@@ -1,160 +1,144 @@
-#include "src/dsp/SuperSaw.h" // Include the Hypersaw class definition
+// SuperSaw.ino
+// ---------------------------------------------------------------------------
+// Hypersaw ("Super Saw") demo - Pico-DSP-Garden
+//
+// Seven detuned band-limited sawtooth oscillators after the Roland JP-8000,
+// arpeggiating a 32-step sequence. Built entirely on the rpdsp library.
+//
+
 #include "src/audio/audio.h"
 #include "src/audio/audio_i2s.h"
 #include "src/dsp/oscillator.h"
-// Define the number of oscillators
+#include "src/dsp/SuperSaw.h"
 
-//  pins for the I2S audio most should work fine, but I'm using PCM510x
-int PICO_AUDIO_I2S_DATA_PIN = 15;
-int PICO_AUDIO_I2S_CLOCK_PIN_BASE = 16; //  Pico forces you to use BasePin + 1 for the LRCK so LRCK is 17
+// ---------------------------------------------------------------------------
+// I2S pin assignment (see AGENTS.md wiring convention)
+// ---------------------------------------------------------------------------
+static const int PICO_AUDIO_I2S_DATA_PIN       = 15;
+static const int PICO_AUDIO_I2S_CLOCK_PIN_BASE = 16; // LRCK = 16, BCLK = 17
 
-float SAMPLE_RATE = 48000.0f;
-float INT16_MAX_AS_FLOAT = 32767.0f;
-float INT16_MIN_AS_FLOAT = -32768.0f;
-int NUM_AUDIO_BUFFERS = 3;
-int SAMPLES_PER_BUFFER = 256;
-audio_buffer_pool_t *producer_pool = nullptr;
+// ---------------------------------------------------------------------------
+// Audio engine constants
+// ---------------------------------------------------------------------------
+static const float    SAMPLE_RATE        = 48000.0f;
+static const float    INT16_MAX_F        = 32767.0f;
+static const float    INT16_MIN_F        = -32768.0f;
+static const int      NUM_AUDIO_BUFFERS  = 3;
+static const int      SAMPLES_PER_BUFFER = 256;
 
+static audio_buffer_pool_t *producer_pool = nullptr;
 
-// Create an instance of our Hypersaw oscillator
-daisysp::Hypersaw hypersaw;
+// ---------------------------------------------------------------------------
+// DSP objects
+// ---------------------------------------------------------------------------
+static rpdsp::Hypersaw hypersaw;
 
-
-// --- Scale for Arpeggiation ---
-int scale[] = {
-
+// 32-step arpeggio, semitone offsets added to MIDI note 48 (C3).
+static const int SCALE_LENGTH = 32;
+static const int SCALE[SCALE_LENGTH] = {
     0, 3, 5, 10, 12, 6, 7, 12,
     7, 6, 7, 8, 10, 6, 4, 2,
     0, 2, 4, 6, 8, 4, 2, 0,
     7, 9, 10, 12, 6, 8, 7, 5
 };
 
+volatile int note_index = 0; // core-safe: Core 1 writes, Core 0 reads
 
-volatile int note_index = 0; // Use volatile for core-safe access
-
-void initHypersaw()
+// ---------------------------------------------------------------------------
+// Initialise DSP objects (called once from Core 0 setup)
+// ---------------------------------------------------------------------------
+static void initHypersaw()
 {
-
-    hypersaw.Init(SAMPLE_RATE);
-    hypersaw.SetFreq(daisysp::mtof(scale[0] + 48)); // Set initial frequency
-    hypersaw.SetAllWaveforms(daisysp::Oscillator::WAVE_POLYBLEP_SAW); // Use saw waves
-
-//  adjust the detune and mix parameters here!!!! 
-            hypersaw.SetDetune(.681f);
-            hypersaw.SetMix(.5f);
-
+    hypersaw.prepare(SAMPLE_RATE);
+    hypersaw.setFreq(rpdsp::midiNoteToHz(static_cast<float>(SCALE[0] + 48)));
+    hypersaw.setDetune(0.381f);
+    hypersaw.setMix(0.5f);
 }
 
-// --- Audio Buffer Conversion (remains the same) ---
-static inline int16_t convertSampleToInt16(float sample)
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+static inline int16_t float_to_int16(float s)
 {
-    float scaled = sample * INT16_MAX_AS_FLOAT;
-    scaled = roundf(scaled);
-    // Use fclamp from DaisySP for clamping
-    scaled = daisysp::fclamp(scaled, INT16_MIN_AS_FLOAT, INT16_MAX_AS_FLOAT);
+    float scaled = s * INT16_MAX_F;
+    scaled = rpdsp::clamp(scaled, INT16_MIN_F, INT16_MAX_F);
     return static_cast<int16_t>(scaled);
 }
 
-
-
-void fill_audio_buffer(audio_buffer_t *buffer)
+// ---------------------------------------------------------------------------
+// Audio fill callback - Core 0 hot path; must not block
+// ---------------------------------------------------------------------------
+static void fill_audio_buffer(audio_buffer_t *buffer)
 {
-    int N = buffer->max_sample_count;
-    int16_t *out = reinterpret_cast<int16_t *>(buffer->buffer->bytes);
-
-    static int debug_counter = 0;
-    static float max_signal = 0.0f;
+    const int    N   = static_cast<int>(buffer->max_sample_count);
+    int16_t     *out = reinterpret_cast<int16_t *>(buffer->buffer->bytes);
 
     for (int i = 0; i < N; ++i)
     {
-        float mixed_signal;
+        float mixed_signal = hypersaw.process();
+        mixed_signal *= 0.33f;
 
-   
-
-            // 4. Get the final signal from the Hypersaw oscillator
-            mixed_signal = hypersaw.Process();
-            mixed_signal *= 0.33f;
-        
-
-        // Track maximum signal for debugging
-        if (abs(mixed_signal) > max_signal) {
-            max_signal = abs(mixed_signal);
-        }
-
-        out[2 * i + 0] = convertSampleToInt16(mixed_signal);
-        out[2 * i + 1] = convertSampleToInt16(mixed_signal);
+        int16_t s = float_to_int16(mixed_signal);
+        out[2 * i + 0] = s; // Left
+        out[2 * i + 1] = s; // Right
     }
 
     buffer->sample_count = N;
-
-    
 }
 
-
-// --- Setup for Core 1 ---
-void setup1()
+// ---------------------------------------------------------------------------
+// I2S audio setup helper
+// ---------------------------------------------------------------------------
+static void setupI2SAudio(audio_format_t *audioFmt, audio_i2s_config_t *i2sCfg)
 {
-    delay(100);
-    Serial.println("[CORE1] Second core started for note progression");
-}
-
-
-
-
-// --- Audio I2S Setup ---
-void setupI2SAudio(audio_format_t *audioFormat, audio_i2s_config_t *i2sConfig)
-{
-    if (!audio_i2s_setup(audioFormat, i2sConfig))
+    if (!audio_i2s_setup(audioFmt, i2sCfg))
     {
-        Serial.print("audio failed ");
-        delay(1000);
-
+        Serial.println("[CORE0] audio_i2s_setup failed!");
         return;
     }
     if (!audio_i2s_connect(producer_pool))
     {
-        Serial.println("audio failed ");
-
-        delay(1000);
-
+        Serial.println("[CORE0] audio_i2s_connect failed!");
         return;
     }
     audio_i2s_set_enabled(true);
-    Serial.println("Audio is ready to go!!!!! ");
-    delay(1000);
+    Serial.println("[CORE0] I2S audio started.");
 }
 
-// --- Arduino Setup (Core0) ---
+// ---------------------------------------------------------------------------
+// Core 0 - setup & loop (real-time audio)
+// ---------------------------------------------------------------------------
 void setup()
 {
-    // Initialize Serial for debugging
-    Serial.begin(115200);
-    delay(150);
-    Serial.println("Starting SuperSaw...");
+    delay(150); // let power rails settle
 
-    // Initialize the Hypersaw oscillator - THIS WAS MISSING!
     initHypersaw();
-    Serial.println("Hypersaw initialized");
 
-    static audio_format_t audioFormat = {
-        .sample_freq = (uint32_t)SAMPLE_RATE,
-        .format = AUDIO_BUFFER_FORMAT_PCM_S16,
-        .channel_count = 2};
-    static audio_buffer_format_t bufferFormat = {
-        .format = &audioFormat,
-        .sample_stride = 4};
-    producer_pool = audio_new_producer_pool(&bufferFormat, NUM_AUDIO_BUFFERS, SAMPLES_PER_BUFFER);
-    audio_i2s_config_t i2sConfig = {
-        .data_pin = PICO_AUDIO_I2S_DATA_PIN,
+    static audio_format_t audioFmt = {
+        .sample_freq   = static_cast<uint32_t>(SAMPLE_RATE),
+        .format        = AUDIO_BUFFER_FORMAT_PCM_S16,
+        .channel_count = 2
+    };
+    static audio_buffer_format_t bufFmt = {
+        .format        = &audioFmt,
+        .sample_stride = 4           // 2 channels x 2 bytes/sample
+    };
+
+    producer_pool = audio_new_producer_pool(&bufFmt, NUM_AUDIO_BUFFERS, SAMPLES_PER_BUFFER);
+
+    audio_i2s_config_t i2sCfg = {
+        .data_pin       = PICO_AUDIO_I2S_DATA_PIN,
         .clock_pin_base = PICO_AUDIO_I2S_CLOCK_PIN_BASE,
-        .dma_channel = 0,
-        .pio_sm = 0};
-    setupI2SAudio(&audioFormat, &i2sConfig);
+        .dma_channel    = 0,
+        .pio_sm         = 0
+    };
 
+    setupI2SAudio(&audioFmt, &i2sCfg);
 }
-//  Audio loop, all audio processing happens on this core leaving the other core completely free to do whatever you want
+
 void loop()
 {
+    // Real-time audio fill - Core 0 must never block here
     audio_buffer_t *buf = take_audio_buffer(producer_pool, true);
     if (buf)
     {
@@ -162,17 +146,27 @@ void loop()
         give_audio_buffer(producer_pool, buf);
     }
 }
-// --- Main Application Logic for Core 1 ---
-void loop1()
+
+// ---------------------------------------------------------------------------
+// Core 1 - setup1 & loop1 (non-real-time: sequencing, serial debug)
+// ---------------------------------------------------------------------------
+void setup1()
 {
-    hypersaw.SetFreq(daisysp::mtof(scale[note_index] + 48));
-
-//  This code works fine, but it shouldn't be used in "real life"
-//  I am using a blocking delay here to show how you can actually do whatever you want
-//  in the second core.  
-
-    delay(122);
-
-    note_index = (note_index + 1) % 32; // Cycle through the scale (32 notes total)
+    delay(200);
+    Serial.begin(115200);
+    Serial.println("[CORE1] SuperSaw hypersaw demo starting...");
+    Serial.print  ("[CORE1] Sample rate: ");
+    Serial.println(SAMPLE_RATE);
+    Serial.println("[CORE1] Sequence:    32-step arpeggio");
 }
 
+void loop1()
+{
+    hypersaw.setFreq(rpdsp::midiNoteToHz(static_cast<float>(SCALE[note_index] + 48)));
+
+    // Blocking delay here is fine: Core 0 owns the real-time audio path and
+    // never touches Core 1. In a real sequencer you'd schedule on a timer.
+    delay(122);
+
+    note_index = (note_index + 1) % SCALE_LENGTH;
+}
