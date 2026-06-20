@@ -1,6 +1,6 @@
 # Realtime Rules
 
-The audio callback is a hard realtime section. At 48 kHz with 32-sample blocks, the processor has about 0.667 ms to finish each stereo block before the next DMA half-buffer needs service. The safe design is boring, bounded, and measurable.
+The audio callback is a hard realtime section. At 48 kHz, the processor has roughly 0.667 ms per 32-frame block (or ~5.33 ms for the 256-frame buffers some examples use) to finish each stereo block before the next DMA half-buffer needs service. The safe design is boring, bounded, and measurable.
 
 ## Callback Contract
 
@@ -25,18 +25,17 @@ Allowed work:
 
 ## Memory Rules
 
-Use fixed storage:
+Use fixed storage (member, sized in the type):
 
 ```cpp
-rpdsp::DelayLine<48000> delay;
-rpdsp::DefaultAudioBlock scratch;
+rpdsp::DelayLine<48000> delay_;
 ```
 
 Avoid hidden allocation:
 
 ```cpp
 // Avoid this in process:
-std::vector<float> temp(block.frames());
+std::vector<float> temp(numFrames);
 ```
 
 If a module needs scratch memory, make it a member and size it in the type or in a pre-audio initialization step.
@@ -57,19 +56,39 @@ const float gain = gain_.next();
 
 Do not run UI parsing, MIDI decoding, patch loading, or codec control from the audio callback.
 
-Use `rpdsp::MidiByteParser` on the control side of the application, then publish the resulting `MidiNoteEvent`, `MidiControlEvent`, or mapped parameter values to the DSP graph. Treat the parser as an adapter boundary: USB-MIDI, UART MIDI, BLE MIDI, and test fixtures can all feed bytes into the same parser without making transport part of the audio callback.
+Keep MIDI parsing off the audio core. If/when a `MidiByteParser` exists (see
+[`roadmap.md`](roadmap.md)), it belongs on the control side; only the resulting
+mapped parameter values cross into the DSP graph via `volatile` globals or a
+lock-free queue. Today the examples do MIDI/sequencing directly in Core 1's
+`loop1()` and publish note events as simple `volatile` flags.
 
-For physical controls, calibrate raw ADC values before mapping:
+For physical controls, read and smooth ADC values on the control side, then
+publish a target the audio core ramps toward per-sample:
 
 ```cpp
-rpdsp::SmoothedAdcParameter cutoff;
-cutoff.prepare(sampleRate, 8.0f);
-cutoff.configure({120, 3980, false},
-                 {80.0f, 8000.0f, rpdsp::ParameterCurve::Exponential, 0});
-cutoff.setRaw(adcValue);
+// Control side (Core 1): read ADC, smooth, publish
+volatile float cutoff_target;
+void loop1() {
+  float raw = analogRead(A0) / 4095.0f;
+  smoothed = smoothed * 0.9f + raw * 0.1f;   // EMA
+  cutoff_target = mapToHz(smoothed);
+}
+
+// Audio side (Core 0): ramp to target per-sample
+rpdsp::LinearSmoother cutoff_smoother;
+void fill_audio_buffer(audio_buffer_t* buffer) {
+  cutoff_smoother.setTarget(cutoff_target);   // snapshot once per buffer
+  for (int i = 0; i < N; ++i) {
+    float c = cutoff_smoother.next();         // ramp per sample
+    // ...
+  }
+}
 ```
 
-Use `rpdsp::GateDebouncer` for switches, gates, and triggers that arrive from GPIO or ADC thresholding. Publish only debounced edges to the audio graph.
+For switches, gates, and triggers from GPIO, debounce and edge-detect on the
+control side and publish only edges to the audio graph. A `GateDebouncer`
+helper is on the [roadmap](roadmap.md); today the examples do simple edge
+detection in `loop1()`.
 
 ## Dual-Core Rules
 
@@ -105,16 +124,10 @@ For 48 kHz stereo:
 
 Keep measured worst-case time comfortably below the full block period. A practical target is to keep the full graph under 50 percent of the callback budget, leaving room for interrupt jitter and platform overhead.
 
-Use `rpdsp::CallbackPerformanceMeter` or the runtime stats fields to track measured block cost:
-
-```cpp
-const std::uint64_t startedAtUs = meter.begin();
-processor.process(block);
-meter.end(startedAtUs);
-const auto stats = meter.stats();
-```
-
-The useful fields are `lastDurationUs`, `worstDurationUs`, `overrunBlocks`, `cpuLoadPercent`, and `worstCpuLoadPercent`. Copy or inspect those values from non-realtime code. Do not print them from inside the callback.
+Track measured block cost. A `CallbackPerformanceMeter` helper is on the
+[roadmap](roadmap.md); today, instrument the callback by toggling a GPIO and
+measuring with a logic analyzer, or by writing a cycle count to a `volatile`
+for non-realtime inspection. Do not print timing data from inside the callback.
 
 ## Review Checklist
 
@@ -122,7 +135,7 @@ Before a processor is used in firmware:
 
 - `prepare` initializes all sample-rate dependent state.
 - `reset` returns the module to a deterministic silent or known state.
-- `process` uses `block.frames()`.
+- `process` uses the host buffer frame count (`buffer->max_sample_count` in the `pico_audio_i2s` examples).
 - No allocation happens in `process`.
 - No blocking calls happen in `process`.
 - Feedback paths are bounded.
