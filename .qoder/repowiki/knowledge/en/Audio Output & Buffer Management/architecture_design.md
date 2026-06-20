@@ -1,0 +1,4 @@
+- **Core Abstraction**: Defines a producer-consumer model via `audio_buffer_pool_t` and `audio_connection_t` in `audio.h`, decoupling data generation from hardware output.
+- **Hardware Interface**: `audio_i2s.c` implements the I2S driver using PIO state machines (`audio_i2s.pio`) and DMA for efficient, low-CPU-overhead audio streaming.
+- **Buffer Management**: `buffer.h` and `buffer.c` handle memory allocation for audio samples, including a specialized USB RAM allocator hack for RP2040.
+- **Sample Conversion**: `sample_conversion.h` provides C++ template-based utilities for format conversion (e.g., S8 to S16) and channel mapping (Mono to Stereo) during buffer transfers.

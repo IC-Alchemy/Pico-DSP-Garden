@@ -1,0 +1,5 @@
+- Entry points are Arduino-style `.ino` files (e.g., `Oscillators.ino`) that orchestrate the audio engine.
+- Internal structure separates low-level I2S/PIO drivers (`src/audio/`) from high-level DSP algorithms (`src/dsp/`).
+- The `src/audio/` layer manages DMA-based buffer pools and PIO state machines for glitch-free I2S streaming.
+- The `src/dsp/` layer provides oscillator primitives (naive and band-limited B-spline) and effects, consumed by the main loop.
+- Dual-core execution is standard: Core 0 handles the hard-real-time audio callback, while Core 1 manages non-blocking UI, sequencing, or serial debugging.

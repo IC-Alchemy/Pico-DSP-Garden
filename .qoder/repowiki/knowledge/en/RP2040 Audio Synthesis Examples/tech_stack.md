@@ -1,0 +1,1 @@
+Integrates DaisySP's `Hypersaw` implementation (SuperSaw example) alongside custom `rpdsp` band-limited oscillators; uses RP2040 PIO for I2S clock generation.

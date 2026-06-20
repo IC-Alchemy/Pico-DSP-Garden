@@ -1,0 +1,1 @@
+Uses Raspberry Pi Pico SDK (PIO, DMA, IRQ) for hardware control; C++ templates in `sample_conversion.h` for zero-overhead sample format conversion.

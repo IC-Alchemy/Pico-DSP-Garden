@@ -1,0 +1,3 @@
+- Header-only DSP modules use inline implementations to ensure real-time safety and avoid linkage overhead across examples.
+- Audio buffer management isolates hardware-specific I2S/PIO interactions behind a consistent C-style API used by all examples.
+- Example projects mirror the root library structure in their `src/` directories to facilitate direct inclusion and testing of shared modules.

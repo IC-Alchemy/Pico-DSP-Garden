@@ -1,0 +1,1 @@
+Demonstrates real-time audio synthesis on Raspberry Pi Pico using I2S output and dual-core DSP architectures.

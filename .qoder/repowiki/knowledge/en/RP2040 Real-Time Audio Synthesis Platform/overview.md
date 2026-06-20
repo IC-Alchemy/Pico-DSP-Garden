@@ -1,0 +1,1 @@
+Orchestrates a shared audio-DSP library stack with example applications targeting Raspberry Pi Pico hardware.

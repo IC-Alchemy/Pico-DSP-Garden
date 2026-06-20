@@ -1,0 +1,1 @@
+A header-only C++ library providing real-time safe digital signal processing primitives for embedded and host audio applications.
