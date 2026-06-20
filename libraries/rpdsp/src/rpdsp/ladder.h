@@ -1,6 +1,5 @@
 #pragma once
-#ifndef RPDSP_LADDER_H
-#define RPDSP_LADDER_H
+
 
 /* Ported from the Audio Library for Teensy, Ladder Filter.
  * Copyright (c) 2021, Richard van Hoesel

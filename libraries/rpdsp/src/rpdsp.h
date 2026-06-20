@@ -12,6 +12,8 @@
 
 #pragma once
 #include "rpdsp/algorithm.h"
+#include "rpdsp/analysis.h"
+#include "rpdsp/clock_tracker.h"
 #include "rpdsp/config.h"
 #include "rpdsp/delay_line.h"
 #include "rpdsp/dynamics.h"
@@ -22,9 +24,11 @@
 #include "rpdsp/hypersaw.h"
 #include "rpdsp/joystick_recorder.h"
 #include "rpdsp/knob_bank.h"
+#include "rpdsp/ladder.h"
 #include "rpdsp/oscillator.h"
 #include "rpdsp/parameter_smoother.h"
 #include "rpdsp/pickup_knob.h"
 #include "rpdsp/realtime.h"
 #include "rpdsp/rhythm_sequencer.h"
 #include "rpdsp/voice.h"
+#include "rpdsp/waveguide.h"

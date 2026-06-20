@@ -3,7 +3,6 @@
 #include "example_utils.h"
 
 #include "rp2350_audio_dsp/dsp/algorithm.h"
-#include "rp2350_audio_dsp/dsp/audio_block.h"
 #include "rp2350_audio_dsp/dsp/config.h"
 #include "rp2350_audio_dsp/dsp/delay_line.h"
 #include "rp2350_audio_dsp/dsp/effects.h"

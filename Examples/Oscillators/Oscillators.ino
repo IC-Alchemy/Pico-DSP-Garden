@@ -56,7 +56,9 @@ void fill_audio_buffer(audio_buffer_t *buffer)
     {
 
 
-    
+      float mixed_signal= 
+
+        mixed_signal *= 0.3f;
 
         // Set the left and right output channels to the final mixed signal
 

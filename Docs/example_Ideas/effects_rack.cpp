@@ -1,14 +1,17 @@
 // Renders a generated stereo pattern through delay, chorus, reverb, drive, and compression.
 
-#include "example_utils.h"
+#include <rpdsp.h>
+#include <pico_audio_i2s.h>
 
+#include <pico_audio_i2s/audio.h>
+#include <pico_audio_i2s/audio_i2s.h>
+#include <rpdsp/oscillator.h>
 #include "rp2350_audio_dsp/dsp/algorithm.h"
-#include "rp2350_audio_dsp/dsp/audio_block.h"
 #include "rp2350_audio_dsp/dsp/config.h"
 #include "rp2350_audio_dsp/dsp/dynamics.h"
 #include "rp2350_audio_dsp/dsp/effects.h"
 #include "rp2350_audio_dsp/dsp/filter.h"
-#include "rp2350_audio_dsp/dsp/oscillator.h"
+#include "/rpdsp/oscillator.h"
 #include "rp2350_audio_dsp/dsp/parameter_smoother.h"
 
 #include <algorithm>
