@@ -1,1 +1,0 @@
-Provides a common API for audio buffer management and I2S output using PIO on RP2040/RP2350 microcontrollers.

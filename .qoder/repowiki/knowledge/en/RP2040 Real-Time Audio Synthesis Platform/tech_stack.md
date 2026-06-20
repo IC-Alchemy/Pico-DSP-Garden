@@ -1,1 +1,0 @@
-C/C++ for embedded DSP and I2S/PIO driver implementation; Arduino framework for RP2040 board support and sketch compilation.

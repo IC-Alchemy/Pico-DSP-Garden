@@ -1,4 +1,0 @@
-- Audio processing is strictly isolated to Core 0 via `loop()`, while background tasks run on Core 1 via `loop1()`.
-- Shared state between cores is managed using `volatile` variables with simple atomic read/write patterns.
-- DSP objects follow a `prepare(sampleRate)` initialization pattern before being used in the audio callback.
-- Audio buffers are processed in fixed-size chunks (typically 256 samples) using a producer-consumer pool.

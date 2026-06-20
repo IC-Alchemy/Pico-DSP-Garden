@@ -1,1 +1,0 @@
-C++17 header-only library using `constexpr` and `static_assert` for compile-time configuration (e.g., `RPDSP_BLOCK_SIZE` in `config.h`).

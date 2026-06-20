@@ -1,3 +1,0 @@
-- The root module acts as a monorepo-style container where `audio_library` and `dsp_library` provide reusable, hardware-adjacent primitives (I2S/PIO drivers, DSP algorithms) consumed by `examples`.
-- Shared source files in the top-level `audio/` and `dsp/` directories serve as the canonical implementation, symlinked or copied into each example's `src/` structure to maintain a single source of truth for core logic.
-- Example sketches (`.ino` files) act as entry points that wire together the audio output pipeline and DSP graph, demonstrating specific synthesis techniques while relying on the common underlying libraries for hardware abstraction and signal processing.

@@ -1,4 +1,0 @@
-- All DSP classes implement a `prepare(float sampleRate)` method to initialize coefficients and a `reset()` method to clear state, ensuring deterministic behavior across audio callbacks.
-- Input parameters and internal states are clamped using helper functions from `algorithm.h` (e.g., `clamp01`, `clampCutoff`) at the API boundary to maintain realtime safety in the `process()` loop.
-- Denormal floating-point values are suppressed using `zapDenormal()` in feedback paths (filters, oscillators) to prevent CPU performance spikes on embedded hardware.
-- Template-based fixed-capacity containers (e.g., `DelayLine<Capacity>`, `TriggeredSynthVoice<MaxOscillators>`) are used to avoid dynamic memory allocation during audio processing.

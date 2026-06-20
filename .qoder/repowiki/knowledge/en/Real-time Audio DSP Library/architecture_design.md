@@ -1,4 +1,0 @@
-- **Header-Only Architecture**: The module consists entirely of `.h` files within the `rpdsp` namespace, designed for zero-linkage overhead and easy integration into firmware (e.g., Raspberry Pi Pico) or host environments.
-- **Core Primitives Layer**: Foundational components like `DelayLine` (with cubic interpolation), `Phasor`, and `XorShift32` PRNG in `realtime.h` provide the building blocks for higher-level algorithms.
-- **Synthesis Engine**: `oscillator.h` implements both naive and band-limited (B-spline) oscillators, while `voice.h` composes these with `filter.h` (State Variable Filter) and `envelope.h` (ADSR) into a complete subtractive synthesis voice (`TriggeredSynthVoice`).
-- **Effects & Dynamics**: `effects.h` and `dynamics.h` offer modular processing chains, including Schroeder reverb, chorus, and compressors, all relying on `algorithm.h` for math utilities and `config.h` for compile-time block size constraints.

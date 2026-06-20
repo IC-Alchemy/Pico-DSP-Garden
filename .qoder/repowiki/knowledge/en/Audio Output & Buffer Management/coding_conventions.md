@@ -1,3 +1,0 @@
-- Spinlocks are used to protect shared audio buffer lists (`free_list`, `prepared_list`) in multi-core environments.
-- Default connection handlers (`producer_pool_take_buffer_default`, etc.) provide a standard pass-through mechanism for buffer exchange between pools.
-- Audio buffers are managed via linked lists within `audio_buffer_pool_t`, using head/tail pointers for efficient queue operations.
