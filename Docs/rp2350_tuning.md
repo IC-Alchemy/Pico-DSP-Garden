@@ -1,20 +1,27 @@
 # RP2350 Tuning
 
-This guide captures tuning assumptions for the approved target: RP2350, 48 kHz stereo, 32-sample blocks, and an Arduino-Pico I2S codec path.
+This guide captures tuning assumptions for the approved target: RP2350, 48 kHz stereo, short audio blocks, and an Arduino-Pico I2S codec path.
 
 ## Baseline Configuration
 
 - Sample rate: `48000.0f`.
-- Block size: `32` frames.
-- Channels: stereo.
 - DSP format: `float`.
+- Channels: stereo.
 - Codec path: platform-managed Arduino-Pico I2S.
 - License: MIT.
+
+**Buffer sizes in practice:** Examples declare `SAMPLES_PER_BUFFER` per sketch
+— 256 in LadderFilter and SuperSaw (~5.33 ms per block at 48 kHz), 32 in
+Oscillators, SimpleOscillators, and TwoChannelOscillator (~0.667 ms). The
+library constant `RPDSP_BLOCK_SIZE` (32, in `config.h`) is a compile-time
+default, not the examples' buffer size; examples process per-sample over
+`buffer->max_sample_count` frames. The 0.667 ms figure below is the per-block
+target for DSP-graph cost, regardless of the host buffer size.
 
 
 ## Latency
 
-At 32 frames and 48 kHz, one processing block is about 0.667 ms. End-to-end latency also includes:
+At 48 kHz, a 32-frame block is about 0.667 ms and a 256-frame block is about 5.33 ms. End-to-end latency also includes:
 
 - Codec conversion latency.
 - Arduino-Pico I2S DMA buffering.
@@ -77,11 +84,18 @@ The DSP library does not own codec register details, and it does not maintain a 
 - Configure system and peripheral clocks.
 - Configure Earle Philhower's Arduino-Pico `I2S` transport.
 - Configure codec sample rate, word length, format, and analog routing.
-- Convert hardware buffers into `rpdsp::DefaultAudioBlock` or equivalent views.
+- Convert hardware buffers into the `audio_buffer_t*` from `pico_audio_i2s` and
+  fill it sample-by-sample in the sketch's `fill_audio_buffer`.
 - Call the DSP graph.
-- Convert processed floats back to the codec sample format.
+- Convert processed floats back to the codec sample format (clamp to ±1, scale
+  to int16, write interleaved stereo).
 
-`PioI2sAudio` is a wrapper over the Arduino-Pico driver. Its validation reflects that driver's constraints: BCLK and LRCLK are an adjacent pin pair, standard stereo uses two channels, TDM requires output-capable mode, and only 8/16/24/32-bit sample widths are accepted.
+The Arduino-Pico I2S driver (`pico_audio_i2s`) reflects the hardware
+constraints directly: BCLK and LRCLK are an adjacent pin pair
+(`PICO_AUDIO_I2S_CLOCK_PIN_BASE` and `base+1`), standard stereo uses two
+channels, and only 16/24/32-bit sample widths are used in practice. The sketch
+fills `audio_buffer_t*` buffers directly — no `PioI2sAudio` wrapper exists. The
+aspirational wrapper is in [`roadmap.md`](roadmap.md).
 
 Keep codec control outside the audio callback unless the platform has a proven nonblocking register path.
 
