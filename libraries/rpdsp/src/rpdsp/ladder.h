@@ -219,5 +219,3 @@ class LadderFilter {
 };
 
 }  // namespace rpdsp
-
-#endif  // RPDSP_LADDER_H
