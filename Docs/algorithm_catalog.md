@@ -1,214 +1,166 @@
-# Algorithm Catalog
+# rpdsp Algorithm Catalog
 
-This catalog describes DSP modules that fit the RP2350 Music DSP API style: small C++17 classes with explicit `prepare`, `reset`, and `process` methods. The approved baseline is 48 kHz stereo, 32-sample blocks, float processing, and a platform boundary that delegates codec transport to Arduino-Pico I2S when firmware is built.
+Reference for the DSP modules in `libraries/rpdsp/src/rpdsp/`. Every entry
+below is real, header-only, namespace `rpdsp`. Source of truth = the headers.
 
-## Core Block Utilities
+Conventions:
+- Every module is `prepare(float sampleRate)`'d before use. `prepare` is the
+  one-time setup call (not `Init`).
+- Sources (oscillators) use `setFreq(hz)` / `process()`. Processors use
+  `setCutoff`/`setResonance`/etc. and `process(float input)`.
+- `process()` returns the value at the current phase *before* advancing.
+- Naive oscillators alias on saw/square — use the `SecondOrderBSpline*`
+  classes for band-limited output.
 
-### Stereo Audio Block
+Aspirational APIs (block framework, codec bridges) are in
+[`roadmap.md`](roadmap.md).
 
-- Role: fixed-capacity stereo sample container for callback processing.
-- Public type: `rpdsp::AudioBlock<Capacity>` and `rpdsp::DefaultAudioBlock`.
-- Realtime cost: one contiguous left array and one contiguous right array.
-- Notes: use `setFrameCount()` when the platform supplies a partial block; otherwise the default block size is 32 frames.
+## Core utilities
 
-### Parameter Smoothing
+`config.h`:
+- `RPDSP_BLOCK_SIZE` — compile-time block size, `static_assert`'d to 16/32/64
+  (default 32).
+- `kDefaultSampleRate = 48000.0f`, `kDefaultBlockSize`, `kPi`, `kTwoPi`.
 
-- Role: click-free ramps for gain, cutoff, mix, or modulation depth.
-- Public type: `rpdsp::LinearSmoother`.
-- Realtime cost: one addition and branch per sample.
-- Notes: call `setTarget()` from the control side or between blocks, then call `next()` per sample in the processor.
+`algorithm.h` — free functions:
+- `clamp(x, lo, hi)`, `clamp01(x)`, `lerp(a, b, t)`, `wrap01(x)`.
+- `dbToGain(db)`, `gainToDb(gain)` (20 dB decade, log floor).
+- `midiNoteToHz(note)` — `440 * 2^((note-69)/12)`.
+- `safeSampleRate(sr)` — falls back to 48 k if `sr <= 1`.
+- `clampCutoff(cutoff, sr)`, `onePoleSmooth(ms, sr)`.
+- `softClip(x)` — `x / (1 + |x|)`.
+- `fastTanh(x)` — 3-piece rational approximation.
+- `equalPowerPanLeft/Right(pan)` — cos/sin pan law on [-1, 1].
 
-### Delay Line
+`realtime.h`:
+- `zapDenormal(x)` — returns 0 if `|x| < 1e-20`. Use at feedback boundaries.
+- `XorShift32` — deterministic PRNG; `nextU32()`, `nextBipolar()`. Not crypto.
 
-- Role: fixed-capacity circular buffer for echo, comb filters, flangers, choruses, and string synthesis.
-- Public type: `rpdsp::DelayLine<Capacity>`.
-- Realtime cost: one bounded circular-buffer write and one indexed read; `readLinear()` and `readCubic()` add fractional interpolation.
-- Notes: capacity is compile-time storage. Pick capacities deliberately to avoid hidden heap use.
+## Oscillators
 
-### Shared Math and Realtime Helpers
+`oscillator.h` — two families:
 
-- Role: reusable scalar utilities for module implementations and user processors.
-- Public headers: `algorithm.h` and `realtime.h`.
-- Public functions/types: `clamp`, `clamp01`, `lerp`, `wrap01`, `dbToGain`, `gainToDb`, `midiNoteToHz`, `clampCutoff`, `onePoleCoefficient`, `softClip`, equal-power pan helpers, `zapDenormal`, and `XorShift32`.
-- Notes: these helpers keep sample-rate guards, decibel math, cutoff limits, denormal cleanup, and deterministic noise behavior consistent across modules.
-- Example: `examples/oscillator_gallery.cpp` uses MIDI pitch, panning, and soft clipping; `examples/modulated_space.cpp` uses `zapDenormal()`.
+**Naive (cheap, aliasing — LFOs, tests):**
+- `Phasor` — base phase accumulator; `prepare`, `reset(phase)`, `setFreq`,
+  `process`, `phase()`.
+- `SineOscillator` (no `SetAmp` — multiply the return value), `TriangleOscillator`,
+  `SawOscillator`, `PulseOscillator` (`setPWM`), `NoiseOscillator`.
 
-## Synthesis Algorithms
+**Band-limited 2nd-order B-spline (impulse → smear → leaky-integrate):**
+- `SecondOrderBSplineSawOscillator` — `setLeak` clamped to [0.9, 1.0].
+- `SecondOrderBSplinePulseOscillator` — handles up to 3 edge crossings/sample.
+- `SecondOrderBSplineHardSyncSawOscillator` — master + slave phases, guarded
+  loop for high sync ratios.
 
-### Subtractive Voice
+`hypersaw.h`:
+- `Hypersaw` — 7-voice "Super Saw" (1 center + 6 detuned), x⁴ detune curve,
+  pitch-tracked `StateVariableFilter` high-pass, randomized phase on
+  `trigger()`. `setFreq`, `setDetune`, `setMix`, `process`.
 
-- Inputs: MIDI-style note, velocity, channel, gate, cutoff, resonance approximation.
-- Public types: `rpdsp::TriggeredSynthVoice<MaxOscillators>`, `TriggeredSynthVoicePreset<MaxOscillators>`, `classicThreeSawSubtractivePreset()`, and `noisePluckPreset()`.
-- Building blocks: fixed saw oscillator bank, noise source, ADSR envelope, state-variable low-pass filter, output gain.
-- RP2350 fit: excellent for polyphony when each voice avoids dynamic allocation.
-- Examples: `examples/subtractive_synth.cpp` and `examples/voice_framework_demos.cpp`.
+## Filters
 
-Recommended first implementation:
+`filter.h`:
+- `OnePoleLowpass` — `prepare`, `reset(value)`, `setCutoff`, `process(input)`.
+- `DcBlocker` — high-pass at 20 Hz default.
+- `BiquadLowpass` — RBJ cookbook, transposed direct form II; `setCutoff`,
+  `setQ` (Q clamped [0.1, 20]).
+- `StateVariableFilter` — TPT SVF; `process` returns
+  `StateVariableOutput{lowpass, bandpass, highpass}`; resonance clamped
+  [0, 0.98]; `setCutoffResonance` combined setter.
 
-- Three saw oscillators through a low-pass filter.
-- Fast attack, short release, and sustain near `0.5f`.
-- Trigger API that can be called directly from a MIDI note-on/note-off layer.
-- Stereo output by duplicating voice output to left/right or applying static pan outside the voice.
+`ladder.h`:
+- `LadderFilter` — Huovilainen 4-pole, 4× oversampled. `Mode` enum:
+  `LP24, LP12, BP24, BP12, HP24, HP12`. Setters: `setFreq`, `setRes`
+  (0..1 → K=0..4), `setPassbandGain`, `setInputDrive`, `setMode`. Block
+  overload `process(float*, size_t)`. Ported from Teensy Audio (van Hoesel).
 
-### Basic Oscillators
+## Effects
 
-- Inputs: frequency, phase reset, pulse width where applicable.
-- Public types: `rpdsp::Phasor`, `SineOscillator`, `TriangleOscillator`, `SawOscillator`, `PulseOscillator`, and `NoiseOscillator`.
-- RP2350 fit: strong for low to moderate voice counts; the naive saw and pulse variants are simple and cheap but not band-limited.
-- Notes: use the simple oscillators for LFOs, low-frequency sources, tests, and intentionally bright sounds where aliasing has been accepted.
-- Example: `examples/oscillator_gallery.cpp`.
+`effects.h`:
+- `Waveshaper` — `setDrive`, `setOutputGain`; tanh normalized by `tanh(drive)`.
+- `Delay<Capacity>` — cubic-interpolated read; feedback clamped [-0.99, 0.99].
+- `Chorus<Capacity>` — `SineOscillator` LFO sweeps fractional delay.
+- `CombFilter<Capacity>`, `AllpassFilter<Capacity>` — Schroeder primitives.
+- `SchroederReverb` — 4 parallel combs + 2 serial allpasses + `OnePoleLowpass`
+  damping at 6 kHz; `setRoomSize`.
+- `StereoSchroederReverb` — two mono tanks, crossfeed, 257-sample right
+  predelay, mid/side width.
 
-### Second-Order B-Spline Oscillators
+`delay_line.h`:
+- `DelayLine<Capacity>` — ring buffer; `read`, `readLinear`, `readCubic`.
 
-- Inputs: frequency, optional pulse width, hard-sync master/slave frequencies.
-- Public types: `SecondOrderBSplineSawOscillator`, `SecondOrderBSplinePulseOscillator`, and `SecondOrderBSplineHardSyncSawOscillator`.
-- RP2350 fit: useful for audio-rate saw, pulse, and hard-sync voices when the naive discontinuity is too harsh.
-- Realtime cost: fixed storage and bounded per-sample work; the hard-sync oscillator has a small guard-bounded event loop.
-- Notes: increments are clamped below Nyquist. `SecondOrderBSplineSawOscillator::setLeak()` can trim the leaky integrator behavior between `0.9f` and `1.0f`.
-- Example: `examples/subtractive_synth.cpp` for saw/pulse voices and `examples/oscillator_gallery.cpp` for hard sync.
+## Dynamics
 
-### Karplus-Strong String
+`dynamics.h` — decomposed for testability:
+- `EnvelopeFollower`, `CompressorStaticCurve` (hard or quadratic knee),
+  `CompressorDetector`, `GainReductionSmoother` (separate attack/release on
+  the gain domain), `Compressor` (threshold dB, ratio, knee width, attack,
+  release, makeup).
 
-- Inputs: trigger, pitch, decay, damping, excitation noise.
-- Building blocks: delay line, low-pass averaging, feedback gain, deterministic noise.
-- RP2350 fit: strong; memory cost is predictable and proportional to maximum delay.
-- Example: `examples/karplus_string.cpp`.
+## Envelopes
 
-Recommended first implementation:
+`envelope.h`:
+- `ADSR` — integer-sample stage counters; `noteOn`, `noteOff`, `process`.
 
-- Fill delay line with short noise burst on trigger.
-- Read one period behind the write head.
-- Average current and previous delayed samples.
-- Feed back with decay below `1.0f`.
+## Voice & sequencing
 
-### Drum and Exciter Sources
+`voice.h`:
+- `TriggeredSynthVoice<MaxOscillators>` — subtractive: oscillators + noise →
+  SVF (velocity-to-cutoff) → ADSR. `noteOn(VoiceTrigger)`, `noteOnHz`,
+  `noteOff` with note/channel wildcard matching, `applyPreset`.
+- `TriggeredSynthVoicePreset<MaxOscillators>`, `classicThreeSawSubtractivePreset()`,
+  `noisePluckPreset()`.
+- `VoiceTrigger` and settings structs.
 
-- Inputs: trigger, decay, tone, level.
-- Building blocks: noise, envelopes, one-pole filters, short resonators.
-- RP2350 fit: strong for fixed voice counts.
-- Notes: denormal cleanup matters on long decays; use `rpdsp::zapDenormal()`.
+`gate_pattern.h`:
+- `GatePattern<MaxSteps=32>` — fixed-size step-mask gate sequencer.
 
-## Effect Algorithms
+`rhythm_sequencer.h`:
+- `RhythmGateSequencer<MaxSteps=32>` — reads interleaved external pattern
+  tables (caller owns storage).
 
-### Gain, Pan, and Utility
+`clock_tracker.h`:
+- `ClockTracker` — PPQN transport (default 96 PPQN, two-bar 4/4).
+  `processExternalClock(bool clockHigh)` (rising edge → true),
+  `advanceTick()`, `currentStepPosition()` (nearest-step rounding),
+  `isStale(timeoutSeconds=2)`, `clockOutPulse(divider=4)`.
+- `StepPosition{step, offsetTicks}`.
 
-- Inputs: gain, pan, mute, phase.
-- Building blocks: `AudioBlock::applyGain()`, manual per-channel transforms, smoothers.
-- RP2350 fit: trivial cost; good first integration test for an I2S callback.
-- Example: `examples/pass_through.cpp`.
+`knob_bank.h`:
+- `KnobBank<NumBanks, NumKnobs>` — multi-bank parameter storage with pickup;
+  `process(array&)`.
 
-### Delay and Echo
+`pickup_knob.h`:
+- `PickupKnob` — software takeover, no jumps on bank switch.
 
-- Inputs: time, feedback, wet/dry mix.
-- Building blocks: `DelayLine`, cubic fractional reads, smoothed parameters, feedback limiter.
-- RP2350 fit: strong if maximum delay memory is reserved statically.
-- Example: `examples/effects_rack.cpp`.
+`joystick_recorder.h`:
+- `JoystickRecorder<MaxPositions>` — fixed-buffer X/Y motion record+loop.
 
-### Chorus and Flanger
+## Parameter smoothing
 
-- Inputs: base delay, modulation depth, rate, feedback, mix.
-- Building blocks: fractional delay with `readCubic()`, low-frequency oscillator.
-- RP2350 fit: good for a few stereo instances; modulation math should be kept simple.
-- Example: `examples/effects_rack.cpp` and `examples/modulated_space.cpp`.
+`parameter_smoother.h`:
+- `LinearSmoother` — fixed-ramp target-to-current linear interpolation;
+  `prepare(sampleRate, ms)`, `setTarget`, `next`.
 
-### DC Blocking and Rumble Cleanup
+## Physical modeling & analysis
 
-- Inputs: audio sample stream and a low cutoff frequency.
-- Public type: `rpdsp::DcBlocker`.
-- RP2350 fit: very cheap one-pole high-pass behavior for codec offsets, biased modulation, or saturation stages.
-- Notes: use after nonlinear processors or at codec input boundaries when a graph can build up DC. It keeps one previous input and one previous output sample, with no buffers or allocation.
-- Example: `examples/effects_rack.cpp`.
+`waveguide.h`:
+- `KarplusStrongVoice<Capacity>` — plucked string; `prepare`, `reset`,
+  `setDecay(0..0.9999)`, `pluck(freqHz, amp)`, `process`, `isActive`.
 
-### Saturation and Waveshaping
+`analysis.h`:
+- `ZeroCrossingPitchDetector` — rising-edge-only, smoothed period estimate.
+- `YinPitchDetector<WindowSize, MaxTau>` — full YIN (difference, cumulative-
+  mean normalized difference, absolute-threshold walk-down, parabolic
+  interpolation); `setFreqRange`, `setThreshold`, `setUpdateIntervalSamples`,
+  `process`, `hasPitch`, `frequencyHz`, `confidence`.
+- `RmsPeakMeter` — running RMS + peak; copy results out, no logging in callback.
 
-- Inputs: drive, trim, bias, mix.
-- Building blocks: polynomial or rational transfer functions.
-- RP2350 fit: strong; avoid expensive transcendental functions in large graphs unless profiled.
-- Example: `examples/effects_rack.cpp`.
+## Hardware
 
-### Stereo Schroeder Reverb
-
-- Inputs: left/right samples, room size, wet/dry mix, stereo width, and small right-channel predelay.
-- Public type: `rpdsp::StereoSchroederReverb`.
-- RP2350 fit: fixed storage and bounded work; suitable for small send effects when convolution or large FDN reverbs are too heavy.
-- Notes: the wrapper owns two mono Schroeder tanks, a short predelay, and wet-side mid/side width control. Keep it as an effect send or late-stage insert rather than duplicating it per voice.
-- Example: `examples/effects_rack.cpp`.
-
-### Compressor
-
-- Inputs: threshold in dB, ratio, knee width in dB, attack/release, makeup gain.
-- Public types: `EnvelopeFollower`, `CompressorStaticCurve`, `CompressorDetector`, `GainReductionSmoother`, and `Compressor`.
-- RP2350 fit: appropriate when dynamics behavior is staged and tested separately.
-- Notes: the compressor is intentionally split into detector, static curve, gain-reduction smoother, and final gain application. This makes knee behavior, attack/release response, and makeup gain testable without treating the compressor as one opaque block.
-- Example: `examples/effects_rack.cpp` for the full compressor and `examples/analysis_tuner.cpp` for the split stages.
-
-## Analysis and Metering
-
-### Zero-Crossing Pitch
-
-- Inputs: one sample at a time.
-- Public type: `rpdsp::ZeroCrossingPitchDetector`.
-- Outputs: last smoothed frequency estimate.
-- RP2350 fit: cheap and deterministic, but only reliable for clean monophonic signals.
-- Example: `examples/analysis_tuner.cpp`.
-
-### YIN Pitch Tracking
-
-- Inputs: one sample at a time with fixed template storage.
-- Public type: `rpdsp::YinPitchDetector<WindowSize, MaxTau>`.
-- Outputs: `hasPitch()`, `frequencyHz()`, and `confidence()`.
-- RP2350 fit: useful for monophonic pitch tracking when the window and maximum tau are bounded deliberately.
-- Notes: call `setFreqRange(...)`, `setThreshold(...)`, and `setUpdateIntervalSamples(...)` to balance low-frequency reach, CPU cost, and update rate. Analysis runs only after the fixed window is full.
-- Example: `examples/analysis_tuner.cpp`.
-
-### RMS and Peak Meter
-
-- Inputs: one sample at a time.
-- Public type: `rpdsp::RmsPeakMeter`.
-- Outputs: running RMS and peak values since the last reset.
-- RP2350 fit: safe if results are copied out without logging from the audio callback.
-- Example: `examples/pass_through.cpp` and `examples/analysis_tuner.cpp`.
-
-### Routing
-
-- Inputs: fixed channel count, per-channel stereo samples, gain, pan, and enabled state.
-- Public types: `rpdsp::StereoSample` and `rpdsp::StereoMixer<Channels>`.
-- RP2350 fit: good for small fixed mixers where channel count is known at compile time.
-- Notes: the mixer does no allocation and ignores out-of-range channel writes.
-- Example: `examples/oscillator_gallery.cpp`.
-
-## Platform Boundary
-
-### I2S Sample Bridge
-
-- Inputs: interleaved signed 16-bit, Arduino-Pico left-aligned 24-bit, or signed 32-bit stereo samples.
-- Public type: `rpdsp::I2sSampleBridge`.
-- Outputs: float `AudioBlock` data for DSP processing and clipped interleaved integer samples for I2S transport.
-- RP2350 fit: useful at the codec edge because conversion is explicit and the DSP graph stays float-based.
-- Example: `examples/codec_bridge_loopback.cpp`.
-
-### Benchmark Harness
-
-- Inputs: processor under test and repeated audio blocks.
-- Outputs: elapsed time, cycles, or overrun margin.
-- RP2350 fit: necessary before adding complex modulation, filters, or polyphony.
-- Example: `examples/benchmark.cpp`.
-
-## Selection Criteria
-
-Prefer algorithms that have:
-
-- Fixed memory known at compile time.
-- No allocation during `process`.
-- Stable behavior at 48 kHz and 32-frame blocks.
-- Clear reset state.
-- Bounded control-rate work.
-- A measurable worst-case processing budget.
-
-Avoid algorithms that require:
-
-- Heap allocation in the audio path.
-- File I/O, logging, USB prints, or blocking locks in `process`.
-- Codec register changes from the audio callback.
-- Unbounded loops driven by musical input.
-- Large lookup tables unless they are static and explicitly budgeted.
+`hardware_interpolator.h` — RP2xxx interpolator peripheral (host-dummy shim
+when `<hardware/interp.h>` absent):
+- `HardwareInterpolatorPool` — static bitmask allocator for the 4 interp lanes.
+- `HardwareWavefolder` — hardware triangular wave-folding (RAII, non-copyable).
+- `HardwareOscillator` — phase-accumulator wavetable oscillator using interp0
+  blend mode for hardware linear interpolation.
