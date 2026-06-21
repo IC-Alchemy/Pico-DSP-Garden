@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main, looped]
+  pull_request:
+    branches: [main, looped]
+
+jobs:
+  host-tests:
+    name: Host tests (CMake + doctest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S tests -B tests/build
+
+      - name: Build
+        run: cmake --build tests/build
+
+      - name: Test
+        run: ctest --test-dir tests/build --output-on-failure
+
+  build-examples:
+    name: Build examples (arduino-cli)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install arduino-cli
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh \
+            | BINDIR=/usr/local/bin sh
+
+      - name: Install rp2040 core
+        run: |
+          arduino-cli config init --overwrite
+          arduino-cli config set board_manager.additional_urls https://github.com/earlephilhower/arduino-pico/releases/download/global/package_rp2040_index.json
+          arduino-cli core update-index
+          arduino-cli core install rp2040:rp2040
+
+      - name: Build all examples
+        run: bash scripts/build_all_examples.sh
