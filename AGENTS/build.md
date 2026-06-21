@@ -5,14 +5,59 @@ How sketches are built and verified in Pico-DSP-Garden.
 ## Two verification paths
 
 - **Host tests** (`tests/`, CMake + doctest) catch compile errors and math
-  regressions in `libraries/rpdsp` before flashing. Build and run:
-  `cmake -S tests -B tests/build && cmake --build tests/build && ctest --test-dir tests/build`.
+  regressions in `libraries/rpdsp` before flashing. The `test_compile_all` case
+  includes every `rpdsp` header, so a missing transitive include fails the build.
   `audio.h` / `audio_i2s.h` are guarded by `#if defined PICO_RP2350 || PICO_RP2040`
   (plus the RP2040/RP2350 Arduino arch macros) and compile to **nothing**
   off-target, so the audio driver is not covered by host tests — only `rpdsp` is.
+
+  ```sh
+  cmake -S tests -B tests/build
+  cmake --build tests/build
+  ctest --test-dir tests/build --output-on-failure
+  ```
+
+  On Windows this builds with MSVC (Visual Studio 2022). On Linux/macOS/CI it
+  builds with gcc. Both work — `rpdsp` is portable C++17. doctest is vendored at
+  `tests/doctest.h` (v2.4.11, MIT).
+
 - **Firmware verification** is: *compile the sketch, flash it to the Pico 2, and
-  listen.* `scripts/build_all_examples.sh` (or `.ps1`) compiles every example;
-  audio behavior itself still requires a flash and ears.
+  listen.* Host tests do not and cannot verify audio behavior — that still
+  requires hardware.
+
+## Build all examples (arduino-cli)
+
+```sh
+# Linux / macOS / CI
+bash scripts/build_all_examples.sh
+
+# Windows (PowerShell or cmd via powershell -File)
+pwsh scripts/build_all_examples.ps1
+```
+
+Both read `scripts/fqbn.txt` and iterate `Examples/*/`, compiling each sketch
+against `libraries/rpdsp` and `libraries/pico_audio_i2s`. Prints a per-example
+PASS/FAIL summary; exits non-zero if any fail. Does **not** flash.
+
+First-time setup (installs the board core + toolchain):
+
+```sh
+arduino-cli config init --overwrite
+arduino-cli config set board_manager.additional_urls https://github.com/earlephilhower/arduino-pico/releases/download/global/package_rp2040_index.json
+arduino-cli core update-index
+arduino-cli core install rp2040:rp2040
+```
+
+## Single example (manual)
+
+```sh
+arduino-cli compile \
+  --fqbn "$(cat scripts/fqbn.txt)" \
+  --library libraries/rpdsp --library libraries/pico_audio_i2s \
+  Examples/<Name>
+```
+
+Or open `Examples/<Name>/<Name>.ino` in the Arduino IDE and Verify/Upload.
 
 ## Toolchain
 
@@ -20,22 +65,24 @@ How sketches are built and verified in Pico-DSP-Garden.
   `Examples/<Name>/<Name>.ino`.
 - The core is **earle-philhower's arduino-pico** (board package `rp2040`) — NOT the
   official `arduino:mbed_rp2040` core. Target board is **Pico 2 (RP2350)**.
-- Default FQBN (from `build/build.options.json`): `rp2040:rp2040:rpipico2`
-  (sketch options include
-  `flash=4194304_0,freq=200,opt=Optimize3,usbstack=picosdk`).
+- The FQBN lives in `scripts/fqbn.txt`. It is
+  `rp2040:rp2040:rpipico2:flash=4194304_0,arch=arm,freq=200,opt=Optimize3,os=none,profile=Disabled,rtti=Disabled,stackprotect=Disabled,exceptions=Disabled,dbgport=Disabled,dbglvl=None,usbstack=picosdk,ipbtstack=ipv4only,uploadmethod=default`.
+  A board change is a one-file edit.
 
-## Compile with arduino-cli
+## IDE setup (Arduino IDE / VS Code)
 
-Pass **both** library flags so the canonical sources are picked up:
+`.vscode/` is not tracked (machine-specific). To work in the Arduino IDE, copy or
+symlink `libraries/rpdsp` and `libraries/pico_audio_i2s` into your sketchbook
+`libraries/` directory; `arduino-cli` instead takes the `--library` flags shown
+above (no copy needed). The FQBN above is the one to set as the selected board in
+either IDE.
 
-```
-arduino-cli compile \
-  --fqbn rp2040:rp2040:rpipico2:flash=4194304_0,freq=200,opt=Optimize3,usbstack=picosdk \
-  --library libraries/rpdsp --library libraries/pico_audio_i2s \
-  Examples/<Name>
-```
+## CI
 
-Or open `Examples/<Name>/<Name>.ino` in the Arduino IDE and Verify/Upload.
+`.github/workflows/ci.yml` runs both jobs on push/PR to `main` and `looped`:
+`host-tests` (fast gate) and `build-examples` (downloads the rp2040 toolchain on
+first run). CI catches compile regressions, header-include drift, and example
+breakage automatically.
 
 ## The `build/` directory
 
