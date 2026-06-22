@@ -43,6 +43,7 @@ extern "C" {
 #define AUDIO_BUFFER_FORMAT_PCM_S8 2           ///< signed 8bit PCM
 #define AUDIO_BUFFER_FORMAT_PCM_U16 3          ///< unsigned 16bit PCM
 #define AUDIO_BUFFER_FORMAT_PCM_U8 4           ///< unsigned 8bit PCM
+#define AUDIO_BUFFER_FORMAT_PCM_S32 5          ///< signed 32bit container, 24-in-32 audio left-justified (bits 31..8 audio, 7..0 zero)
 
 /** \brief Audio format definition
  */
@@ -294,6 +295,16 @@ audio_buffer_t *mono_s8_to_stereo_consumer_take(audio_connection_t *connection, 
  *  \ingroup pico_audio
  */
 void stereo_to_stereo_producer_give(audio_connection_t *connection, audio_buffer_t *buffer);
+
+/*! \brief Stereo S32 (24-in-32) consumer take; identity copy of int32 frames.
+ *  \ingroup pico_audio
+ */
+audio_buffer_t *stereo_to_stereo_consumer_take_s32(audio_connection_t *connection, bool block);
+
+/*! \brief Stereo S32 (24-in-32) producer give; identity copy of int32 frames.
+ *  \ingroup pico_audio
+ */
+void stereo_to_stereo_producer_give_s32(audio_connection_t *connection, audio_buffer_t *buffer);
 
 // not worth a separate header for now
 typedef struct __packed pio_audio_channel_config {

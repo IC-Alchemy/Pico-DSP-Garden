@@ -26,8 +26,6 @@ static const int PICO_AUDIO_I2S_CLOCK_PIN_BASE = 16; // LRCK = 16, BCLK = 17
 // Audio engine constants
 // ---------------------------------------------------------------------------
 static const float    SAMPLE_RATE        = 48000.0f;
-static const float    INT16_MAX_F        = 32767.0f;
-static const float    INT16_MIN_F        = -32768.0f;
 static const int      NUM_AUDIO_BUFFERS  = 3;
 static const int      SAMPLES_PER_BUFFER = 256;
 
@@ -61,29 +59,19 @@ static void initHypersaw()
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-static inline int16_t float_to_int16(float s)
-{
-    float scaled = s * INT16_MAX_F;
-    scaled = rpdsp::clamp(scaled, INT16_MIN_F, INT16_MAX_F);
-    return static_cast<int16_t>(scaled);
-}
-
-// ---------------------------------------------------------------------------
 // Audio fill callback - Core 0 hot path; must not block
 // ---------------------------------------------------------------------------
 static void fill_audio_buffer(audio_buffer_t *buffer)
 {
     const int    N   = static_cast<int>(buffer->max_sample_count);
-    int16_t     *out = reinterpret_cast<int16_t *>(buffer->buffer->bytes);
+    int32_t     *out = reinterpret_cast<int32_t *>(buffer->buffer->bytes);
 
     for (int i = 0; i < N; ++i)
     {
         float mixed_signal = hypersaw.process();
         mixed_signal *= 0.33f;
 
-        int16_t s = float_to_int16(mixed_signal);
+        int32_t s = rpdsp::toInt24x32(mixed_signal);
         out[2 * i + 0] = s; // Left
         out[2 * i + 1] = s; // Right
     }
@@ -121,12 +109,12 @@ void setup()
 
     static audio_format_t audioFmt = {
         .sample_freq   = static_cast<uint32_t>(SAMPLE_RATE),
-        .format        = AUDIO_BUFFER_FORMAT_PCM_S16,
+        .format        = AUDIO_BUFFER_FORMAT_PCM_S32,
         .channel_count = 2
     };
     static audio_buffer_format_t bufFmt = {
         .format        = &audioFmt,
-        .sample_stride = 4           // 2 channels x 2 bytes/sample
+        .sample_stride = 8           // 2 channels x 4 bytes/sample (24-in-32)
     };
 
     producer_pool = audio_new_producer_pool(&bufFmt, NUM_AUDIO_BUFFERS, SAMPLES_PER_BUFFER);

@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <limits>
 
 namespace rpdsp {
@@ -18,6 +19,20 @@ inline float clamp(float value, float low, float high) {
 // Normalized modulation, mix, and envelope values live on [0, 1].
 inline float clamp01(float value) {
   return clamp(value, 0.0f, 1.0f);
+}
+
+// Convert a [-1, 1] float to a 24-in-32 left-justified int32 word for I2S output.
+// Bits 31..8 hold the 24 audio bits; bits 7..0 are zero (the DAC clocks them out
+// but ignores them). Branch-free and allocation-free; safe for the realtime
+// audio callback. Scale is 2^23 - 1 so +1.0 maps to positive full-scale
+// (0x7FFFFF00) without overflowing the 24-bit range. Truncates toward zero; the
+// ~0.5 LSB error is inaudible at 24-bit and avoids a libc roundf() call.
+inline int32_t toInt24x32(float sample) {
+  const float clamped = clamp(sample, -1.0f, 1.0f);
+  const int32_t s = static_cast<int32_t>(clamped * 8388607.0f);  // 2^23 - 1
+  // Shift in the unsigned domain: left-shifting a negative signed value is UB
+  // before C++20, and the bit pattern is identical either way.
+  return static_cast<int32_t>(static_cast<uint32_t>(s) << 8);
 }
 
 // Linear interpolation; pass a clamped t when overshoot is not desired.

@@ -25,8 +25,6 @@ int PICO_AUDIO_I2S_CLOCK_PIN_BASE = 16; // LRCK=16, BCLK=17
 
 // ─── Audio engine constants ───────────────────────────────────────────────────
 const float SAMPLE_RATE      = 48000.0f;
-const float INT16_MAX_F      = 32767.0f;
-const float INT16_MIN_F      = -32768.0f;
 const int   NUM_AUDIO_BUFFERS  = 3;
 const int   SAMPLES_PER_BUFFER = 32;
 
@@ -62,25 +60,18 @@ static inline float mapFine(float adc12) {
     return ((adc12 / 4095.0f) - 0.5f) * (FINE_RANGE_HZ * 2.0f);
 }
 
-// ─── Audio helpers ────────────────────────────────────────────────────────────
-static inline int16_t toInt16(float s) {
-    float v = roundf(s * INT16_MAX_F);
-    v = rpdsp::clamp(v, INT16_MIN_F, INT16_MAX_F);
-    return static_cast<int16_t>(v);
-}
-
 // ─── Audio callback (Core 0) ──────────────────────────────────────────────────
 void fill_audio_buffer(audio_buffer_t *buffer) {
     int      N   = buffer->max_sample_count;
-    int16_t *out = reinterpret_cast<int16_t *>(buffer->buffer->bytes);
+    int32_t *out = reinterpret_cast<int32_t *>(buffer->buffer->bytes);
 
     // Snapshot frequencies once per buffer to avoid tearing mid-fill.
     osc_left.setFreq(left_freq);
     osc_right.setFreq(right_freq);
 
     for (int i = 0; i < N; ++i) {
-        out[2 * i + 0] = toInt16(osc_left.process() * 0.8f);   // left
-        out[2 * i + 1] = toInt16(osc_right.process() * 0.8f);  // right
+        out[2 * i + 0] = rpdsp::toInt24x32(osc_left.process() * 0.8f);   // left
+        out[2 * i + 1] = rpdsp::toInt24x32(osc_right.process() * 0.8f);  // right
     }
     buffer->sample_count = N;
 }
@@ -114,12 +105,12 @@ void setup() {
 
     static audio_format_t fmt = {
         .sample_freq  = (uint32_t)SAMPLE_RATE,
-        .format       = AUDIO_BUFFER_FORMAT_PCM_S16,
+        .format       = AUDIO_BUFFER_FORMAT_PCM_S32,
         .channel_count = 2
     };
     static audio_buffer_format_t bfmt = {
         .format        = &fmt,
-        .sample_stride = 4
+        .sample_stride = 8
     };
     producer_pool = audio_new_producer_pool(&bfmt, NUM_AUDIO_BUFFERS, SAMPLES_PER_BUFFER);
 

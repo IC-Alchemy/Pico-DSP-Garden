@@ -63,16 +63,24 @@ const audio_format_t *audio_i2s_setup(const audio_format_t *intended_audio_forma
     pio_sm_claim(audio_pio, sm);
 
 
-    const struct pio_program *program =
+    // 24-in-32 left-justified output uses a sibling PIO program that clocks 32
+    // bits per channel slot instead of 16; everything else (autopull threshold,
+    // DMA width) is shared with the S16 program.
+    bool is_s32 = (intended_audio_format->format == AUDIO_BUFFER_FORMAT_PCM_S32);
+
+    const struct pio_program *program;
 #if PICO_AUDIO_I2S_CLOCK_PINS_SWAPPED
-        &audio_i2s_swapped_program
+    program = is_s32 ? &audio_i2s_32_swapped_program : &audio_i2s_swapped_program;
 #else
-        &audio_i2s_program
+    program = is_s32 ? &audio_i2s_32_program : &audio_i2s_program;
 #endif
-        ;
     uint offset = pio_add_program(audio_pio, program);
 
-    audio_i2s_program_init(audio_pio, sm, offset, config->data_pin, config->clock_pin_base);
+    if (is_s32) {
+        audio_i2s_32_program_init(audio_pio, sm, offset, config->data_pin, config->clock_pin_base);
+    } else {
+        audio_i2s_program_init(audio_pio, sm, offset, config->data_pin, config->clock_pin_base);
+    }
 
     __mem_fence_release();
     uint8_t dma_channel = config->dma_channel;
@@ -125,6 +133,8 @@ static audio_buffer_t *wrap_consumer_take(audio_connection_t *connection, bool b
 #if PICO_AUDIO_I2S_MONO_OUTPUT
     unsupported;
 #else
+    if (connection->producer_pool->format->format == AUDIO_BUFFER_FORMAT_PCM_S32)
+        return stereo_to_stereo_consumer_take_s32(connection, block);
     return stereo_to_stereo_consumer_take(connection, block);
 #endif
 #endif
@@ -147,6 +157,8 @@ static void wrap_producer_give(audio_connection_t *connection, audio_buffer_t *b
 #if PICO_AUDIO_I2S_MONO_OUTPUT
     unsupported;
 #else
+    if (connection->producer_pool->format->format == AUDIO_BUFFER_FORMAT_PCM_S32)
+        return stereo_to_stereo_producer_give_s32(connection, buffer);
     return stereo_to_stereo_producer_give(connection, buffer);
 #endif
 #endif
@@ -200,17 +212,22 @@ bool audio_i2s_connect_extra(audio_buffer_pool_t *producer, bool buffer_on_give,
     printf("Connecting PIO I2S audio\n");
 
     // todo we need to pick a connection based on the frequency - e.g. 22050 can be more simply upsampled to 44100
-    assert(producer->format->format == AUDIO_BUFFER_FORMAT_PCM_S16);
-    pio_i2s_consumer_format.format = AUDIO_BUFFER_FORMAT_PCM_S16;
+    assert(producer->format->format == AUDIO_BUFFER_FORMAT_PCM_S16
+        || producer->format->format == AUDIO_BUFFER_FORMAT_PCM_S32);
+    pio_i2s_consumer_format.format = producer->format->format;
     // todo we could do mono
     // todo we can't match exact, so we should return what we can do
     pio_i2s_consumer_format.sample_freq = producer->format->sample_freq;
 #if PICO_AUDIO_I2S_MONO_OUTPUT
+    if (producer->format->format == AUDIO_BUFFER_FORMAT_PCM_S32) {
+        panic("S32 mono output not supported yet");
+    }
     pio_i2s_consumer_format.channel_count = 1;
     pio_i2s_consumer_buffer_format.sample_stride = 2;
 #else
     pio_i2s_consumer_format.channel_count = 2;
-    pio_i2s_consumer_buffer_format.sample_stride = 4;
+    pio_i2s_consumer_buffer_format.sample_stride =
+        (producer->format->format == AUDIO_BUFFER_FORMAT_PCM_S32) ? 8 : 4;
 #endif
 
     audio_i2s_consumer = audio_new_consumer_pool(&pio_i2s_consumer_buffer_format, buffer_count, samples_per_buffer);
@@ -331,18 +348,26 @@ static inline void audio_start_dma_transfer() {
     }
     assert(ab->sample_count);
     // todo better naming of format->format->format!!
-    assert(ab->format->format->format == AUDIO_BUFFER_FORMAT_PCM_S16);
+    assert(ab->format->format->format == AUDIO_BUFFER_FORMAT_PCM_S16
+        || ab->format->format->format == AUDIO_BUFFER_FORMAT_PCM_S32);
 #if PICO_AUDIO_I2S_MONO_OUTPUT
+    assert(ab->format->format->format == AUDIO_BUFFER_FORMAT_PCM_S16);
     assert(ab->format->format->channel_count == 1);
     assert(ab->format->sample_stride == 2);
+    uint32_t words_per_frame = 1u;
 #else
     assert(ab->format->format->channel_count == 2);
-    assert(ab->format->sample_stride == 4);
+    assert(ab->format->sample_stride == 4 || ab->format->sample_stride == 8);
+    // S16 packs L|R into a single 32-bit DMA word per frame; S32 sends L and R as
+    // two separate 32-bit words, so the transfer count doubles. The DMA transfer
+    // *width* stays DMA_SIZE_32 in both cases (configured in audio_i2s_setup).
+    uint32_t words_per_frame =
+        (ab->format->format->format == AUDIO_BUFFER_FORMAT_PCM_S32) ? 2u : 1u;
 #endif
     dma_channel_config c = dma_get_channel_config(shared_state.dma_channel);
     channel_config_set_read_increment(&c, true);
     dma_channel_set_config(shared_state.dma_channel, &c, false);
-    dma_channel_transfer_from_buffer_now(shared_state.dma_channel, ab->buffer->bytes, ab->sample_count);
+    dma_channel_transfer_from_buffer_now(shared_state.dma_channel, ab->buffer->bytes, ab->sample_count * words_per_frame);
 }
 
 // irq handler for DMA

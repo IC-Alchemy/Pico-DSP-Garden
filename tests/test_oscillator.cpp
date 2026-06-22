@@ -13,8 +13,8 @@ TEST_CASE("SineOscillator output stays in [-1, 1]") {
     }
 }
 
-TEST_CASE("SawOscillator output stays in [-1, 1]") {
-    rpdsp::SawOscillator osc;
+TEST_CASE("SawOsc output stays in [-1, 1]") {
+    rpdsp::SawOsc osc;
     osc.prepare(48000.0f);
     osc.setFreq(220.0f);
     for (int i = 0; i < 1000; ++i) {
