@@ -95,7 +95,7 @@ class TriangleOscillator {
   Phasor phasor_;
 };
 
-class SawOscillator {
+class SawOsc {
  public:
   void prepare(float sampleRate) { phasor_.prepare(sampleRate); }
   void reset(float phase = 0.0f) { phasor_.reset(phase); }
@@ -107,7 +107,7 @@ class SawOscillator {
   Phasor phasor_;
 };
 
-class PulseOscillator {
+class SquareOsc {
  public:
   void prepare(float sampleRate) { phasor_.prepare(sampleRate); }
   void reset(float phase = 0.0f) { phasor_.reset(phase); }
@@ -125,8 +125,7 @@ inline float secondOrderBSpline(float x) {
   // The standard 2nd-order (quadratic) uniform B-spline. It is a smooth,
   // bell-shaped kernel with 3-sample support used to smear a single impulse
   // across several samples; that smearing is what makes the event band-limited.
-  // Because it is smooth (C1), its spectrum falls off faster than linear
-  // interpolation, so it aliases less.
+
   const float ax = std::fabs(x);
   if (ax < 0.5f) {
     return 0.75f - (ax * ax);
@@ -306,7 +305,7 @@ class SecondOrderBSplinePulseOscillator {
 // plus a special impulse each time the master wraps. That master impulse is
 // sized to the slave's current ramp height (not a full unit step), because the
 // reset cancels only however high the slave had climbed, not a whole cycle.
-class SecondOrderBSplineHardSyncSawOscillator {
+class HardSyncSaw {
  public:
   void prepare(float sampleRate) {
     sampleRate_ = safeSampleRate(sampleRate);

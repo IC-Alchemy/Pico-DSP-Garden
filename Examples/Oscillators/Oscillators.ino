@@ -21,7 +21,7 @@ audio_buffer_pool_t *producer_pool = nullptr;
 
 // Arrays for our carrier oscillators and LFOs
 rpdsp::SineOscillator osc1;
-rpdsp::SineOscillator osc2;
+rpdsp::SawOsc osc2;
 
 void initOscillators()
 {
