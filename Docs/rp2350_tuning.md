@@ -6,6 +6,8 @@ This guide captures tuning assumptions for the approved target: RP2350, 48 kHz s
 
 - Sample rate: `48000.0f`.
 - DSP format: `float`.
+- Output format: 24-in-32 left-justified `int32` on the I2S wire
+  (`AUDIO_BUFFER_FORMAT_PCM_S32`); int16 still supported.
 - Channels: stereo.
 - Codec path: platform-managed Arduino-Pico I2S.
 - License: MIT.
@@ -87,8 +89,10 @@ The DSP library does not own codec register details, and it does not maintain a 
 - Convert hardware buffers into the `audio_buffer_t*` from `pico_audio_i2s` and
   fill it sample-by-sample in the sketch's `fill_audio_buffer`.
 - Call the DSP graph.
-- Convert processed floats back to the codec sample format (clamp to ±1, scale
-  to int16, write interleaved stereo).
+- Convert processed floats back to the codec sample format. The project default
+  is 24-in-32 left-justified `int32` via `rpdsp::toInt24x32` (clamp to ±1, scale
+  to 2²³−1, pack into bits 31..8), written interleaved stereo with
+  `sample_stride = 8`. int16 packing remains available for the S16 format.
 
 The Arduino-Pico I2S driver (`pico_audio_i2s`) reflects the hardware
 constraints directly: BCLK and LRCLK are an adjacent pin pair

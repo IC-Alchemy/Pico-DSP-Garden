@@ -49,8 +49,6 @@ static const int   BUTTON_PIN  = 0;   // momentary switch, INPUT_PULLUP, active-
 static const int   DEBOUNCE_MS = 20;
 
 static const float SAMPLE_RATE        = 48000.0f;  // == rpdsp::kDefaultSampleRate
-static const float INT16_MAX_F        = 32767.0f;
-static const float INT16_MIN_F        = -32768.0f;
 static const int   NUM_AUDIO_BUFFERS  = 3;
 static const int   SAMPLES_PER_BUFFER = 256;
 
@@ -111,12 +109,6 @@ static inline float centsToRatio(float cents) {
     return powf(2.0f, cents / 1200.0f);
 }
 
-static inline int16_t float_to_int16(float s) {
-    float scaled = s * INT16_MAX_F;
-    scaled = rpdsp::clamp(scaled, INT16_MIN_F, INT16_MAX_F);
-    return static_cast<int16_t>(scaled);
-}
-
 // Point all three detuned oscillators at a MIDI note (called on noteOn edges).
 static void setNote(int midiNote) {
     const float base = rpdsp::midiNoteToHz(static_cast<float>(midiNote));
@@ -132,7 +124,7 @@ static void setNote(int midiNote) {
 static void fill_audio_buffer(audio_buffer_t *buffer)
 {
     const int    N   = static_cast<int>(buffer->max_sample_count);
-    int16_t     *dst = reinterpret_cast<int16_t *>(buffer->buffer->bytes);
+    int32_t     *dst = reinterpret_cast<int32_t *>(buffer->buffer->bytes);
 
     // Consume cross-core note edges once per block. Steps are ~158 ms and blocks
     // are ~5 ms, so per-block consumption sits well inside the gate timing.
@@ -174,7 +166,7 @@ static void fill_audio_buffer(audio_buffer_t *buffer)
         // 4) Makeup + soft-clip so resonant peaks never clip the DAC.
         const float outf = rpdsp::softClip(filt * amp * OUT_MAKEUP) * OUT_HEADROOM;
 
-        const int16_t sample = float_to_int16(outf);
+        const int32_t sample = rpdsp::toInt24x32(outf);
         dst[2 * i + 0] = sample;   // left
         dst[2 * i + 1] = sample;   // right (mono -> stereo)
     }
@@ -219,12 +211,12 @@ void setup()
 
     static audio_format_t audioFmt = {
         .sample_freq   = static_cast<uint32_t>(SAMPLE_RATE),
-        .format        = AUDIO_BUFFER_FORMAT_PCM_S16,
+        .format        = AUDIO_BUFFER_FORMAT_PCM_S32,
         .channel_count = 2
     };
     static audio_buffer_format_t bufFmt = {
         .format        = &audioFmt,
-        .sample_stride = 4            // 2 channels x 2 bytes/sample
+        .sample_stride = 8            // 2 channels x 4 bytes/sample (24-in-32)
     };
 
     producer_pool = audio_new_producer_pool(&bufFmt, NUM_AUDIO_BUFFERS, SAMPLES_PER_BUFFER);

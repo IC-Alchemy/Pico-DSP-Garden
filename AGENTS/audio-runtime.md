@@ -42,8 +42,21 @@ parameters.
 
 ## Output format
 
-- Output is **interleaved stereo int16** (`sample_stride = 4`: 2 channels × 2 bytes).
-- Write `out[2*i]` = left, `out[2*i+1]` = right.
+- Default output is **24-bit audio as 24-in-32 left-justified** stereo
+  (`AUDIO_BUFFER_FORMAT_PCM_S32`, `sample_stride = 8`: 2 channels × 4 bytes).
+  The 24 audio bits live in bits 31..8 of each `int32` word; bits 7..0 are zero
+  (the PCM510x clocks them out but ignores them).
+- The producer buffer is `int32_t *out`; write `out[2*i]` = left,
+  `out[2*i+1]` = right. Convert float samples with **`rpdsp::toInt24x32(x)`**
+  (in `rpdsp/algorithm.h`) — it clamps to [-1, 1], scales by 2²³−1, and packs.
+- On the wire this is plain 32-bit I2S (64 BCLK per stereo frame, BCLK ≈ 3.07 MHz
+  at 48 kHz). The driver selects a dedicated 32-bit PIO program
+  (`audio_i2s_32` / `audio_i2s_32_swapped`) for this format.
+- **int16 is still supported** via `AUDIO_BUFFER_FORMAT_PCM_S16`
+  (`sample_stride = 4`, `int16_t *out`, the original `audio_i2s` PIO program).
+  The driver picks the program and DMA transfer count from the buffer's format,
+  so a sketch only changes its `audio_format_t.format`, `sample_stride`, and
+  packing helper to switch.
 
 ## I2S wiring convention
 

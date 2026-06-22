@@ -254,4 +254,13 @@ void stereo_to_stereo_producer_give(audio_connection_t *connection, audio_buffer
     return producer_pool_blocking_give<Stereo<FmtS16>, Stereo<FmtS16>>(connection, buffer);
 }
 
+// S32 (24-in-32) pass-through: identity copy of int32 stereo frames.
+audio_buffer_t *stereo_to_stereo_consumer_take_s32(audio_connection_t *connection, bool block) {
+    return consumer_pool_take<Stereo<FmtS32>, Stereo<FmtS32>>(connection, block);
+}
+
+void stereo_to_stereo_producer_give_s32(audio_connection_t *connection, audio_buffer_t *buffer) {
+    return producer_pool_blocking_give<Stereo<FmtS32>, Stereo<FmtS32>>(connection, buffer);
+}
+
 #endif

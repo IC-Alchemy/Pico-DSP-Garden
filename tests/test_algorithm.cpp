@@ -15,6 +15,38 @@ TEST_CASE("clamp01 maps to [0,1]") {
     CHECK(rpdsp::clamp01(0.3f) == doctest::Approx(0.3f));
 }
 
+TEST_CASE("toInt24x32 packs 24-in-32 left-justified") {
+    // Scale is 2^23 - 1 (8388607) with truncation toward zero, then << 8.
+    CHECK(rpdsp::toInt24x32(0.0f) == 0);
+
+    // +1.0 -> +8388607 (0x7FFFFF) << 8 = 0x7FFFFF00 (positive full-scale).
+    CHECK(rpdsp::toInt24x32(1.0f) == static_cast<int32_t>(0x7FFFFF00));
+
+    // -1.0 -> -8388607 (0xFF800001) << 8 = 0x80000100. Note: with symmetric
+    // scaling this is one 24-bit LSB shy of true negative full-scale (0x80000000),
+    // which is the standard, inaudible consequence of scaling by 2^23 - 1.
+    CHECK(rpdsp::toInt24x32(-1.0f) == static_cast<int32_t>(0x80000100));
+
+    // 0.5 -> 4194303 (0x3FFFFF, truncated from 4194303.5) << 8 = 0x3FFFFF00.
+    CHECK(rpdsp::toInt24x32(0.5f) == static_cast<int32_t>(0x3FFFFF00));
+
+    // Low 8 bits are always zero (DAC padding).
+    CHECK((rpdsp::toInt24x32(0.123f) & 0xFF) == 0);
+    CHECK((rpdsp::toInt24x32(-0.777f) & 0xFF) == 0);
+}
+
+TEST_CASE("toInt24x32 is monotonic across the range") {
+    CHECK(rpdsp::toInt24x32(-0.5f) < rpdsp::toInt24x32(0.0f));
+    CHECK(rpdsp::toInt24x32(0.0f) < rpdsp::toInt24x32(0.5f));
+    CHECK(rpdsp::toInt24x32(0.25f) < rpdsp::toInt24x32(0.75f));
+}
+
+TEST_CASE("toInt24x32 clamps out-of-range input") {
+    CHECK(rpdsp::toInt24x32(2.0f) == rpdsp::toInt24x32(1.0f));
+    CHECK(rpdsp::toInt24x32(-2.0f) == rpdsp::toInt24x32(-1.0f));
+    CHECK(rpdsp::toInt24x32(100.0f) == static_cast<int32_t>(0x7FFFFF00));
+}
+
 TEST_CASE("midiNoteToHz: A4 = 440, A5 = 880") {
     CHECK(rpdsp::midiNoteToHz(69) == doctest::Approx(440.0f).epsilon(0.001f));
     CHECK(rpdsp::midiNoteToHz(81) == doctest::Approx(880.0f).epsilon(0.001f));

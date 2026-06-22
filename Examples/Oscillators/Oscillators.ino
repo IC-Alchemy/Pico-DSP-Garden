@@ -13,8 +13,6 @@ int PICO_AUDIO_I2S_CLOCK_PIN_BASE = 16; //  Pico forces you to use BasePin + 1 f
 
 
 float SAMPLE_RATE = 48000.0f;
-float INT16_MAX_AS_FLOAT = 32767.0f;
-float INT16_MIN_AS_FLOAT = -32768.0f;
 int NUM_AUDIO_BUFFERS = 3;
 int SAMPLES_PER_BUFFER = 32;
 audio_buffer_pool_t *producer_pool = nullptr;
@@ -36,21 +34,11 @@ osc2.setFreq(720.f);
 
     }
 
-// --- Audio Buffer Conversion ---
-static inline int16_t convertSampleToInt16(float sample)
-{
-    float scaled = sample * INT16_MAX_AS_FLOAT;
-    scaled = roundf(scaled);
-    scaled = rpdsp::clamp(scaled, INT16_MIN_AS_FLOAT, INT16_MAX_AS_FLOAT);
-    return static_cast<int16_t>(scaled);
-}
-
-
 /// AUDIO LOOP
 void fill_audio_buffer(audio_buffer_t *buffer)
 {
     int N = buffer->max_sample_count;
-    int16_t *out = reinterpret_cast<int16_t *>(buffer->buffer->bytes);
+    int32_t *out = reinterpret_cast<int32_t *>(buffer->buffer->bytes);
 
     for (int i = 0; i < N; ++i)
     {
@@ -62,8 +50,8 @@ void fill_audio_buffer(audio_buffer_t *buffer)
 
         // Set the left and right output channels to the final mixed signal
 
-        out[2 * i + 0] = convertSampleToInt16(osc1.process());
-        out[2 * i + 1] = convertSampleToInt16(osc2.process());
+        out[2 * i + 0] = rpdsp::toInt24x32(osc1.process());
+        out[2 * i + 1] = rpdsp::toInt24x32(osc2.process());
     }
 
     buffer->sample_count = N;
@@ -100,11 +88,11 @@ void setup()
     initOscillators();
     static audio_format_t audioFormat = {
         .sample_freq = (uint32_t)SAMPLE_RATE,
-        .format = AUDIO_BUFFER_FORMAT_PCM_S16,
+        .format = AUDIO_BUFFER_FORMAT_PCM_S32,
         .channel_count = 2};
     static audio_buffer_format_t bufferFormat = {
         .format = &audioFormat,
-        .sample_stride = 4};
+        .sample_stride = 8};
     producer_pool = audio_new_producer_pool(&bufferFormat, NUM_AUDIO_BUFFERS, SAMPLES_PER_BUFFER);
     audio_i2s_config_t i2sConfig = {
         .data_pin = PICO_AUDIO_I2S_DATA_PIN,

@@ -33,6 +33,12 @@ struct FmtU16 : public FmtDetails<uint16_t> {
 struct FmtS16 : public FmtDetails<int16_t> {
 };
 
+// 24-in-32 left-justified audio rides in a plain int32 container; the pass-through
+// only ever copies S32->S32, so the generic memcpy specialization handles it and
+// no sample_converter arithmetic is required.
+struct FmtS32 : public FmtDetails<int32_t> {
+};
+
 // Multi-channel is just N samples back to back
 template<typename Fmt, uint ChannelCount>
 struct MultiChannelFmt {
