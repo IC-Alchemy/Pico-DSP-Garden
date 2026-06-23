@@ -216,6 +216,187 @@ class HardwareWavefolder {
   bool initialized_ = false;
 };
 
+// Single-cycle linear crossfade using INTERP0 blend mode.
+//
+// Computes  out = a + ((b - a) * alpha) >> 8  for an 8-bit blend weight alpha
+// (0 => all a, 255 => almost all b). On the RP2xxx this is one interpolator
+// read with no branches or multiply on the CPU — the hardware datapath does the
+// subtract, multiply and shift. This is the primitive behind the Cornell
+// "audio cross-fade via blend mode" demo, where two signed audio sources are
+// mixed by sweeping alpha.
+class HardwareBlend {
+ public:
+  HardwareBlend() = default;
+  ~HardwareBlend() { deinit(); }
+
+  HardwareBlend(const HardwareBlend&) = delete;
+  HardwareBlend& operator=(const HardwareBlend&) = delete;
+
+  // Blend mode is only available on an interp0 lane.
+  int init(HardwareInterpolatorPool::Resource resource) {
+    if (resource != HardwareInterpolatorPool::Resource::Core0Interp0 &&
+        resource != HardwareInterpolatorPool::Resource::Core1Interp0) {
+      return -4; // Blend is only supported on interp0
+    }
+
+    hw_ = HardwareInterpolatorPool::getHw(resource);
+    if (!hw_) {
+      return -2;
+    }
+    if (!HardwareInterpolatorPool::claim(resource)) {
+      return -3;
+    }
+    resource_ = resource;
+
+#if RPDSP_HAS_HARDWARE_INTERP
+    // Lane 0 carries the blend; lane 1 supplies the signed alpha weight.
+    lane0Cfg_ = interp_default_config();
+    interp_config_set_blend(&lane0Cfg_, true);
+    interp_set_config(hw_, 0, &lane0Cfg_);
+
+    lane1Cfg_ = interp_default_config();
+    interp_config_set_signed(&lane1Cfg_, true);
+    interp_set_config(hw_, 1, &lane1Cfg_);
+
+    hw_->accum[1] = 0;
+    hw_->base[0] = 0;
+    hw_->base[1] = 0;
+#endif
+
+    initialized_ = true;
+    return 0;
+  }
+
+  void deinit() {
+    if (initialized_) {
+      HardwareInterpolatorPool::release(resource_);
+      initialized_ = false;
+      hw_ = nullptr;
+    }
+  }
+
+  // alphaQ8 in [0, 255]: 0 selects a, 255 selects (almost all) b.
+  void setAlphaQ8(std::uint8_t alphaQ8) {
+    alphaQ8_ = alphaQ8;
+#if RPDSP_HAS_HARDWARE_INTERP
+    hw_->accum[1] = alphaQ8;
+#endif
+  }
+
+  // Crossfade with the alpha set by the most recent setAlphaQ8().
+  std::int32_t process(std::int32_t a, std::int32_t b) const {
+#if RPDSP_HAS_HARDWARE_INTERP
+    hw_->base[0] = static_cast<std::uint32_t>(a);
+    hw_->base[1] = static_cast<std::uint32_t>(b);
+    return static_cast<std::int32_t>(hw_->peek[1]);
+#else
+    return a + (((b - a) * static_cast<std::int32_t>(alphaQ8_)) >> 8);
+#endif
+  }
+
+  // Convenience: set alpha and crossfade in one call.
+  std::int32_t blend(std::int32_t a, std::int32_t b, std::uint8_t alphaQ8) {
+    setAlphaQ8(alphaQ8);
+    return process(a, b);
+  }
+
+ private:
+  interp_hw_t* hw_ = nullptr;
+  HardwareInterpolatorPool::Resource resource_ = HardwareInterpolatorPool::Resource::Core0Interp0;
+  std::uint8_t alphaQ8_ = 0;
+  bool initialized_ = false;
+#if RPDSP_HAS_HARDWARE_INTERP
+  interp_config lane0Cfg_;
+  interp_config lane1Cfg_;
+#endif
+};
+
+// Single-cycle saturating clamp using INTERP1 clamp mode.
+//
+// Computes  out = min(max(x, lo), hi)  with no branches on the CPU. Clamp mode
+// is only available on interp1. This is the primitive behind the Cornell
+// "tone burst" demo, where an integrating envelope accumulator is clamped
+// between zero and a peak amplitude before it scales the oscillator.
+class HardwareClamp {
+ public:
+  HardwareClamp() = default;
+  ~HardwareClamp() { deinit(); }
+
+  HardwareClamp(const HardwareClamp&) = delete;
+  HardwareClamp& operator=(const HardwareClamp&) = delete;
+
+  int init(HardwareInterpolatorPool::Resource resource, std::int32_t lo, std::int32_t hi) {
+    if (resource != HardwareInterpolatorPool::Resource::Core0Interp1 &&
+        resource != HardwareInterpolatorPool::Resource::Core1Interp1) {
+      return -4; // Clamp is only supported on interp1
+    }
+
+    hw_ = HardwareInterpolatorPool::getHw(resource);
+    if (!hw_) {
+      return -2;
+    }
+    if (!HardwareInterpolatorPool::claim(resource)) {
+      return -3;
+    }
+    resource_ = resource;
+    lo_ = lo;
+    hi_ = hi;
+
+#if RPDSP_HAS_HARDWARE_INTERP
+    lane0Cfg_ = interp_default_config();
+    interp_config_set_clamp(&lane0Cfg_, true);
+    interp_config_set_signed(&lane0Cfg_, true);
+    interp_set_config(hw_, 0, &lane0Cfg_);
+
+    lane1Cfg_ = interp_default_config();
+    interp_set_config(hw_, 1, &lane1Cfg_);
+
+    hw_->base[0] = static_cast<std::uint32_t>(lo);
+    hw_->base[1] = static_cast<std::uint32_t>(hi);
+#endif
+
+    initialized_ = true;
+    return 0;
+  }
+
+  void deinit() {
+    if (initialized_) {
+      HardwareInterpolatorPool::release(resource_);
+      initialized_ = false;
+      hw_ = nullptr;
+    }
+  }
+
+  void setRange(std::int32_t lo, std::int32_t hi) {
+    lo_ = lo;
+    hi_ = hi;
+#if RPDSP_HAS_HARDWARE_INTERP
+    hw_->base[0] = static_cast<std::uint32_t>(lo);
+    hw_->base[1] = static_cast<std::uint32_t>(hi);
+#endif
+  }
+
+  std::int32_t process(std::int32_t x) const {
+#if RPDSP_HAS_HARDWARE_INTERP
+    hw_->accum[0] = static_cast<std::uint32_t>(x);
+    return static_cast<std::int32_t>(hw_->peek[0]);
+#else
+    return x < lo_ ? lo_ : (x > hi_ ? hi_ : x);
+#endif
+  }
+
+ private:
+  interp_hw_t* hw_ = nullptr;
+  HardwareInterpolatorPool::Resource resource_ = HardwareInterpolatorPool::Resource::Core0Interp1;
+  std::int32_t lo_ = 0;
+  std::int32_t hi_ = 0;
+  bool initialized_ = false;
+#if RPDSP_HAS_HARDWARE_INTERP
+  interp_config lane0Cfg_;
+  interp_config lane1Cfg_;
+#endif
+};
+
 class HardwareOscillator {
  public:
   HardwareOscillator() = default;
@@ -362,7 +543,9 @@ class HardwareOscillator {
 
   std::uint32_t getTableIndex() const {
 #if RPDSP_HAS_HARDWARE_INTERP
-    return interp_->add_raw[0] & tableMask_;
+    // add_raw[0] is the raw phase accumulator; the integer table index lives in
+    // the bits above the fractional part, so shift the fraction out first.
+    return (interp_->add_raw[0] >> fractionalBits_) & tableMask_;
 #else
     return (phase_ >> fractionalBits_) & tableMask_;
 #endif
@@ -370,7 +553,8 @@ class HardwareOscillator {
 
   std::uint8_t getFractionQ8() const {
 #if RPDSP_HAS_HARDWARE_INTERP
-    return static_cast<std::uint8_t>(interp_->add_raw[1] & 0xffu);
+    // Top 8 bits of the fractional part = the Q8 blend weight (alpha).
+    return static_cast<std::uint8_t>((interp_->add_raw[0] >> (fractionalBits_ - 8)) & 0xffu);
 #else
     std::uint32_t fractionMask = (1u << fractionalBits_) - 1;
     return static_cast<std::uint8_t>((phase_ & fractionMask) >> (fractionalBits_ - 8));
@@ -413,7 +597,7 @@ class HardwareOscillator {
     if (table_ == nullptr) return -1;
 
 #if RPDSP_HAS_HARDWARE_INTERP
-    std::uint32_t index = interp_->add_raw[0] & tableMask_;
+    std::uint32_t index = (interp_->add_raw[0] >> fractionalBits_) & tableMask_;
     std::int16_t sample_a = table_[index];
     std::int16_t sample_b = table_[(index + 1u) & tableMask_];
     interp_->base01 = (static_cast<std::uint32_t>(static_cast<std::uint16_t>(sample_a))) |
