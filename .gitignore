@@ -2,6 +2,7 @@
 Examples/*/build/
 libraries/*/build/
 build/
+buildUF2/
 */build/
 
 # Host test build artifacts

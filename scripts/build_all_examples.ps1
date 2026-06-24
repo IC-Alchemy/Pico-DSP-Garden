@@ -41,15 +41,22 @@ $pass = 0
 $fail = 0
 $failed = @()
 
+$uf2Dir = Join-Path $RepoRoot "buildUF2"
+if (-not (Test-Path $uf2Dir)) {
+    New-Item -Path $uf2Dir -ItemType Directory | Out-Null
+}
+
 foreach ($ex in $examples) {
     $name = $ex.Name
     $logFile = Join-Path $env:TEMP "build_$name.log"
+    $buildPath = Join-Path $RepoRoot "build\tmp_$name"
     Write-Host -NoNewline ("{0,-32} ... " -f $name)
 
     # Redirect both stdout and stderr to the log; do NOT let stderr trip
     # ErrorActionPreference (arduino-cli/gcc prints benign warnings there).
     & arduino-cli compile `
         --fqbn $Fqbn `
+        --build-path $buildPath `
         --library (Join-Path $RepoRoot "libraries\rpdsp") `
         --library (Join-Path $RepoRoot "libraries\pico_audio_i2s") `
         $ex.FullName *> $logFile
@@ -57,6 +64,13 @@ foreach ($ex in $examples) {
     if ($LASTEXITCODE -eq 0) {
         Write-Host "PASS"
         $pass++
+
+        # Find and copy the UF2 binary to buildUF2/
+        $uf2File = Get-ChildItem -Path $buildPath -Filter *.uf2 -File -Recurse | Select-Object -First 1
+        if ($uf2File) {
+            $destPath = Join-Path $uf2Dir "$name.uf2"
+            Copy-Item -Path $uf2File.FullName -Destination $destPath -Force
+        }
     } else {
         Write-Host "FAIL (see $logFile)"
         $fail++
