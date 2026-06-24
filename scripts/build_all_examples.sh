@@ -45,16 +45,27 @@ pass=0
 fail=0
 failed_examples=()
 
+UF2_DIR="$REPO_ROOT/buildUF2"
+mkdir -p "$UF2_DIR"
+
 for ex in "${examples[@]}"; do
   name="$(basename "$ex")"
+  build_path="$REPO_ROOT/build/tmp_$name"
   printf '%-32s ... ' "$name"
   if arduino-cli compile \
         --fqbn "$FQBN" \
+        --build-path "$build_path" \
         --library "$REPO_ROOT/libraries/rpdsp" \
         --library "$REPO_ROOT/libraries/pico_audio_i2s" \
         "$ex" >/tmp/build_"$name".log 2>&1; then
     echo "PASS"
     pass=$((pass + 1))
+
+    # Find and copy the UF2 binary to buildUF2/
+    uf2_file=$(find "$build_path" -name "*.uf2" -print -quit 2>/dev/null || true)
+    if [ -n "$uf2_file" ]; then
+      cp "$uf2_file" "$UF2_DIR/$name.uf2"
+    fi
   else
     echo "FAIL (see /tmp/build_${name}.log)"
     fail=$((fail + 1))
