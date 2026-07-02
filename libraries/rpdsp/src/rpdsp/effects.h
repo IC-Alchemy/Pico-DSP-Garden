@@ -14,17 +14,23 @@ namespace rpdsp {
 
 class Waveshaper {
  public:
-  void setDrive(float drive) { drive_ = std::max(0.1f, drive); }
+  void setDrive(float drive) {
+    drive_ = std::max(0.1f, drive);
+    // Precompute the loudness normalizer: it depends only on drive, so keeping
+    // it out of process() saves a std::tanh per sample in the audio path.
+    const float norm = std::tanh(drive_);
+    invNorm_ = norm > 0.0f ? 1.0f / norm : 1.0f;
+  }
   void setOutputGain(float gain) { outputGain_ = gain; }
 
   float process(float input) const {
     // Normalize by tanh(drive) so changing drive mostly changes tone, not loudness.
-    const float norm = std::tanh(drive_);
-    return (std::tanh(input * drive_) / (norm > 0.0f ? norm : 1.0f)) * outputGain_;
+    return std::tanh(input * drive_) * invNorm_ * outputGain_;
   }
 
  private:
   float drive_ = 1.0f;
+  float invNorm_ = 1.0f / 0.7615941559557649f;  // 1 / tanh(1.0), matches drive_ default
   float outputGain_ = 1.0f;
 };
 

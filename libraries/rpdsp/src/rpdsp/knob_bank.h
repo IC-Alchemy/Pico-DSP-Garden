@@ -46,6 +46,8 @@ class KnobBank {
   }
 
   [[nodiscard]] float value(size_t bank, size_t knob) const {
+    if (bank >= NumBanks || knob >= NumKnobs)
+      return 0.0f;
     return values_[bank][knob];
   }
 

@@ -36,6 +36,7 @@ class ClockTracker {
     loopCount_ = 0;
     samplesSinceClock_ = 0;
     lastIntervalSamples_ = 0;
+    haveFirstInterval_ = false;
     lastClockHigh_ = false;
     clockOutTickCount_ = 0;
   }
@@ -76,10 +77,15 @@ class ClockTracker {
     if (rising) {
       // Track a lightly smoothed period between rising edges; stale clocks
       // restart the estimate instead of averaging in a long gap.
-      if (lastIntervalSamples_ == 0 || isStale())
+      if (!haveFirstInterval_ || isStale()) {
+        // First edge (or re-sync after staleness): seed, do not average.
         lastIntervalSamples_ = samplesSinceClock_;
-      else
-        lastIntervalSamples_ = (lastIntervalSamples_ + samplesSinceClock_) / 2;
+        haveFirstInterval_ = true;
+      } else {
+        // Average in float so the smoothing does not bias low from int truncation.
+        lastIntervalSamples_ = static_cast<std::int32_t>(
+            (static_cast<float>(lastIntervalSamples_) + static_cast<float>(samplesSinceClock_)) * 0.5f);
+      }
 
       samplesSinceClock_ = 0;
       advanceTick();
@@ -96,7 +102,7 @@ class ClockTracker {
   }
 
   [[nodiscard]] float externalIntervalSeconds() const {
-    if (sampleRate_ <= 0.0f || lastIntervalSamples_ <= 0 || isStale())
+    if (sampleRate_ <= 0.0f || !haveFirstInterval_ || lastIntervalSamples_ <= 0 || isStale())
       return 0.0f;
     return static_cast<float>(lastIntervalSamples_) / sampleRate_;
   }
@@ -152,6 +158,7 @@ class ClockTracker {
   int loopCount_ = 0;
   std::int32_t samplesSinceClock_ = 0;
   std::int32_t lastIntervalSamples_ = 0;
+  bool haveFirstInterval_ = false;
   bool lastClockHigh_ = false;
   int clockOutTickCount_ = 0;
 };

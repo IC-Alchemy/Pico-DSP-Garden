@@ -182,7 +182,7 @@ The worst offender for phantom APIs: references ~9 classes that do not exist
 - **Effects** — `Waveshaper`, `Delay`, `Chorus`, `CombFilter`, `AllpassFilter`,
   `SchroederReverb`, `StereoSchroederReverb`.
 - **Dynamics** — the decomposed chain: `EnvelopeFollower`,
-  `CompressorStaticCurve`, `CompressorDetector`, `GainReductionSmoother`,
+  `CompressorStaticCurve`, `GainReductionSmoother`,
   `Compressor`.
 - **Envelopes** — `ADSR`.
 - **Voice & sequencing** — `TriggeredSynthVoice`, `VoiceTrigger`, presets,
@@ -390,3 +390,4 @@ host-tests job remains the always-on gate.
 
 None material. The CI `build-examples` weight (§2.4 tuning knob) is the only
 item flagged for runtime decision, and it is easily adjustable post-hoc.
+

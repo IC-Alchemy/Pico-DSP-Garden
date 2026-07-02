@@ -1,0 +1,10 @@
+^Z:\CODEZZZ\03_MUSIC_AUDIO_MIDI\MUSICCODE\PICO-DSP-GARDEN\TESTS\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SZ:/Codezzz/03_Music_Audio_MIDI/MusicCode/Pico-DSP-Garden/tests -BZ:/Codezzz/03_Music_Audio_MIDI/MusicCode/Pico-DSP-Garden/tests/build-codex --check-stamp-file Z:/Codezzz/03_Music_Audio_MIDI/MusicCode/Pico-DSP-Garden/tests/build-codex/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

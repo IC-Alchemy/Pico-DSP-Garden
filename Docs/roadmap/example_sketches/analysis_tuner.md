@@ -24,8 +24,7 @@ the analysis vs. control paths side by side.
 - `rpdsp::ZeroCrossingPitchDetector` and `rpdsp::YinPitchDetector<1024, 512>`
   (range 70–900 Hz, threshold 0.18, 2-block update interval).
 - `rpdsp::RmsPeakMeter` for output metering.
-- `rpdsp::EnvelopeFollower`, `rpdsp::CompressorStaticCurve`,
-  `rpdsp::CompressorDetector`, `rpdsp::GainReductionSmoother`.
+- `rpdsp::EnvelopeFollower`, `rpdsp::CompressorStaticCurve`, `rpdsp::GainReductionSmoother`.
 - `rpdsp::SineOscillator` (carrier + vibrato), `rpdsp::gainToDb` /
   `rpdsp::dbToGain`.
 
@@ -42,6 +41,8 @@ test doubles as a basic sanity check that analysis ran.
 ## Notes
 
 - This example shows how to reuse the compressor's *internal* stages
-  (curve/detector/smoother) independently of the full `Compressor` wrapper.
+  (curve/envelope-follower/smoother) independently of the full `Compressor` wrapper.
 - The last RMS value is stored in the volatile `lastAnalysisRms` for inspection
   with a debugger.
+
+

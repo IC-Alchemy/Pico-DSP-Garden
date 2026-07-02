@@ -28,9 +28,7 @@ class AnalysisTunerDemo {
     yin_.setThreshold(0.18f);
     yin_.setUpdateIntervalSamples(rpdsp::kDefaultBlockSize * 2);
     follower_.prepare(sampleRate_);
-    follower_.setAttackRelease(3.0f, 120.0f);
-    detector_.prepare(sampleRate_);
-    detector_.setAttackRelease(2.0f, 80.0f);
+    follower_.setAttackRelease(2.0f, 80.0f);
     gainSmoother_.prepare(sampleRate_);
     gainSmoother_.setAttackRelease(3.0f, 140.0f);
     curve_.setThresholdDb(-17.0f);
@@ -51,9 +49,8 @@ class AnalysisTunerDemo {
 
       const float dry = carrier_.process() * 0.34f;
       const float envelope = follower_.process(dry);
-      const float detected = detector_.process(dry);
       // Use the static compressor curve as a gain-reduction probe, then smooth it.
-      const float targetReduction = curve_.gainReductionDb(rpdsp::gainToDb(detected));
+      const float targetReduction = curve_.gainReductionDb(rpdsp::gainToDb(envelope));
       const float reduction = gainSmoother_.process(targetReduction);
       const float tuned = dry * rpdsp::dbToGain(reduction + 2.5f);
 
@@ -85,7 +82,6 @@ class AnalysisTunerDemo {
   rpdsp::RmsPeakMeter meter_;
   rpdsp::EnvelopeFollower follower_;
   rpdsp::CompressorStaticCurve curve_;
-  rpdsp::CompressorDetector detector_;
   rpdsp::GainReductionSmoother gainSmoother_;
   float lastZeroCrossingHz_ = 0.0f;
   float lastYinHz_ = 0.0f;

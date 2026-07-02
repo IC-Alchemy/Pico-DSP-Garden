@@ -15,6 +15,7 @@
 #include "rpdsp/analysis.h"
 #include "rpdsp/clock_tracker.h"
 #include "rpdsp/config.h"
+#include "rpdsp/control_surface.h"
 #include "rpdsp/delay_line.h"
 #include "rpdsp/dynamics.h"
 #include "rpdsp/effects.h"

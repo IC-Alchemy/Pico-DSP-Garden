@@ -1,6 +1,7 @@
 #pragma once
 
 #include "algorithm.h"
+#include "realtime.h"
 
 #include <cmath>
 
@@ -26,7 +27,9 @@ class EnvelopeFollower {
     const float x = std::fabs(input);
     // Separate coefficients let peaks rise quickly while tails decay musically.
     const float coeff = x > envelope_ ? attackCoeff_ : releaseCoeff_;
-    envelope_ = ((1.0f - coeff) * x) + (coeff * envelope_);
+    // Zap denormals: long release tails on silence would otherwise force slow
+    // CPU denormal handling on host builds (matches OnePoleLowpass/DcBlocker).
+    envelope_ = zapDenormal(((1.0f - coeff) * x) + (coeff * envelope_));
     return envelope_;
   }
 
@@ -86,40 +89,6 @@ class CompressorStaticCurve {
   float thresholdDb_ = -18.0f;
   float ratio_ = 2.0f;
   float kneeWidthDb_ = 0.0f;
-};
-
-class CompressorDetector {
- public:
-  void prepare(float sampleRate) {
-    sampleRate_ = safeSampleRate(sampleRate);
-    setAttackRelease(attackMs_, releaseMs_);
-  }
-
-  void reset(float value = 0.0f) { level_ = std::max(0.0f, value); }
-
-  void setAttackRelease(float attackMs, float releaseMs) {
-    attackMs_ = std::max(0.001f, attackMs);
-    releaseMs_ = std::max(0.001f, releaseMs);
-    attackCoeff_ = onePoleSmooth(attackMs_, sampleRate_);
-    releaseCoeff_ = onePoleSmooth(releaseMs_, sampleRate_);
-  }
-
-  float process(float input) {
-    const float x = std::fabs(input);
-    const float coeff = x > level_ ? attackCoeff_ : releaseCoeff_;
-    level_ = ((1.0f - coeff) * x) + (coeff * level_);
-    return level_;
-  }
-
-  [[nodiscard]] float value() const { return level_; }
-
- private:
-  float sampleRate_ = kDefaultSampleRate;
-  float attackMs_ = 5.0f;
-  float releaseMs_ = 100.0f;
-  float attackCoeff_ = 0.0f;
-  float releaseCoeff_ = 0.0f;
-  float level_ = 0.0f;
 };
 
 class GainReductionSmoother {
@@ -191,7 +160,7 @@ class Compressor {
   float sampleRate_ = kDefaultSampleRate;
   float makeupGainDb_ = 0.0f;
   CompressorStaticCurve curve_;
-  CompressorDetector detector_;
+  EnvelopeFollower detector_;
   GainReductionSmoother gainSmoother_;
 };
 

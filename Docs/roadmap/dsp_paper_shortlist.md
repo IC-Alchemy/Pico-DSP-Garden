@@ -89,7 +89,7 @@ Recommended first change: benchmark `tanhf` against a rational or table approxim
 
 ### 6. Dynamics and Metering
 
-Current modules: `EnvelopeFollower`, `CompressorStaticCurve`, `CompressorDetector`, `GainReductionSmoother`, `Compressor`, and `RmsPeakMeter`.
+Current modules: `EnvelopeFollower`, `CompressorStaticCurve`, `GainReductionSmoother`, `Compressor`, and `RmsPeakMeter`.
 
 The compressor is now split into detector, static curve, gain-reduction smoothing, and gain application. It has soft-knee support through `CompressorStaticCurve`; remaining opportunities are stereo linking, sidechain input, and reducing expensive dB/gain conversion work when profiling shows it matters.
 
@@ -130,3 +130,4 @@ No-key API lookups were used as metadata checks:
 - Crossref confirmed DOI metadata for "Antialiasing Oscillators in Subtractive Synthesis," "Fractional Delay Filters--Design and Applications," and "YIN, a Fundamental Frequency Estimator for Speech and Music."
 - Semantic Scholar's no-key endpoint returned HTTP 429 during parallel probing, so it was not used as an authoritative source in this note.
 - Source links above prefer DOI, publisher, author, university, AES, DAFx, Aalto, or ICMC archive pages over general web summaries.
+

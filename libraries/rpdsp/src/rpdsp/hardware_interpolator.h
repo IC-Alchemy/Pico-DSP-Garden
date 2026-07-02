@@ -188,12 +188,12 @@ class HardwareWavefolder {
     return val;
 #else
     // Software folding simulation on host
-    std::int32_t foldLimit = 1 << foldOrder_;
+    const std::uint32_t foldLimit = 1u << foldOrder_;
     for (std::uint8_t s = 0; s < numStages_; s++) {
-      std::int32_t absVal = val < 0 ? -val : val;
-      std::int32_t doubleLimit = 2 * foldLimit;
-      std::int32_t mod = absVal % doubleLimit;
-      std::int32_t tri = foldLimit - std::abs(mod - foldLimit);
+      std::uint32_t absVal = static_cast<std::uint32_t>(val < 0 ? -static_cast<std::int64_t>(val) : val);
+      std::uint32_t doubleLimit = 2u * foldLimit;
+      std::uint32_t mod = absVal % doubleLimit;
+      std::int32_t tri = static_cast<std::int32_t>(foldLimit - (mod > foldLimit ? mod - foldLimit : foldLimit - mod));
       val = val < 0 ? -tri : tri;
     }
     return val;

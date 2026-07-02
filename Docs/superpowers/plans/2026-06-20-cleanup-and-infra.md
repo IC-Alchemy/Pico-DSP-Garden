@@ -475,7 +475,7 @@ Aspirational APIs (block framework, codec bridges) are in
 
 `dynamics.h` — decomposed for testability:
 - `EnvelopeFollower`, `CompressorStaticCurve` (hard or quadratic knee),
-  `CompressorDetector`, `GainReductionSmoother` (separate attack/release on
+  `GainReductionSmoother` (separate attack/release on
   the gain domain), `Compressor` (threshold dB, ratio, knee width, attack,
   release, makeup).
 
@@ -1632,3 +1632,4 @@ Open the Actions tab for the repo. Both `host-tests` and `build-examples` should
 ## Plan complete
 
 After Task 22: all Phase 1 cleanup and Phase 2 infrastructure is committed on `looped`, CI is wired, and the repo organization matches the codebase. Run `scripts/build_all_examples.ps1` locally to do the full firmware compile before declaring done.
+

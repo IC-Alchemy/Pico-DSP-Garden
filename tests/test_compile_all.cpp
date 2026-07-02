@@ -6,6 +6,7 @@
 #include <rpdsp/analysis.h>
 #include <rpdsp/clock_tracker.h>
 #include <rpdsp/config.h>
+#include <rpdsp/control_surface.h>
 #include <rpdsp/delay_line.h>
 #include <rpdsp/dynamics.h>
 #include <rpdsp/effects.h>
@@ -24,6 +25,16 @@
 #include <rpdsp/rhythm_sequencer.h>
 #include <rpdsp/voice.h>
 #include <rpdsp/waveguide.h>
+
+#include <HarmonyEngine/AdvancedHarmony.h>
+#include <HarmonyEngine/ChordAnalyzer.h>
+#include <HarmonyEngine/CounterpointGenerator.h>
+#include <HarmonyEngine/MusicTheory.h>
+#include <HarmonyEngine/MusicTheoryEngine.h>
+#include <HarmonyEngine/OrchestrationEngine.h>
+#include <HarmonyEngine/ReharmonizationEngine.h>
+#include <HarmonyEngine/TensionAnalysisEngine.h>
+#include <HarmonyEngine/VoiceLeadingEngine.h>
 
 #include "doctest.h"
 

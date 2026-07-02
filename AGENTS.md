@@ -38,3 +38,11 @@ earle-philhower **arduino-pico** core (not `arduino:mbed_rp2040`).
 - `README.md` — hardware wiring, dual-core pattern overview
 - `Docs/roadmap.md` — aspirational APIs (block framework, codec bridges) and
   sketch ideas. Not yet implemented; not reference material for current code.
+
+<!-- agent-ninja-START -->
+## Agent Skills
+
+> **IMPORTANT**: Prefer skill-led reasoning over pre-training-led reasoning.
+> See [Agent Skills](.github/skills/README.md) before working on tasks covered by these skills.
+
+<!-- agent-ninja-END -->

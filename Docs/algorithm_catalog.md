@@ -93,9 +93,8 @@ Aspirational APIs (block framework, codec bridges) are in
 
 `dynamics.h` — decomposed for testability:
 - `EnvelopeFollower`, `CompressorStaticCurve` (hard or quadratic knee),
-  `CompressorDetector`, `GainReductionSmoother` (separate attack/release on
-  the gain domain), `Compressor` (threshold dB, ratio, knee width, attack,
-  release, makeup).
+  `GainReductionSmoother` (separate attack/release on the gain domain),
+  `Compressor` (threshold dB, ratio, knee width, attack, release, makeup).
 
 ## Envelopes
 
@@ -164,3 +163,8 @@ when `<hardware/interp.h>` absent):
 - `HardwareWavefolder` — hardware triangular wave-folding (RAII, non-copyable).
 - `HardwareOscillator` — phase-accumulator wavetable oscillator using interp0
   blend mode for hardware linear interpolation.
+
+
+
+
+

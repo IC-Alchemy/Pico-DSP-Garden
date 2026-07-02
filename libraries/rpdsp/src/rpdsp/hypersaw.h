@@ -1,6 +1,4 @@
 #pragma once
-#ifndef RPDSP_HYPERSAW_H
-#define RPDSP_HYPERSAW_H
 
 #include "algorithm.h"
 #include "filter.h"
@@ -58,6 +56,16 @@ class Hypersaw {
     for (int i = 0; i < kVoiceCount; ++i) {
       voices_[i].reset((rng_.nextBipolar() * 0.5f) + 0.5f);
     }
+  }
+
+  /** Seed the internal PRNG so multiple Hypersaw instances decorrelate.
+   *
+   * The default seed is fixed, so two Hypersaws constructed without a reseed
+   * produce identical phase spreads on every trigger(). Call reseed() once
+   * per instance with a distinct non-zero value (e.g. derived from an analog
+   * pin or a global counter) to avoid the voices lining up. */
+  void reseed(std::uint32_t seed) {
+    rng_ = XorShift32(seed);
   }
 
   void setFreq(float freq) {
@@ -130,4 +138,3 @@ class Hypersaw {
 
 }  // namespace rpdsp
 
-#endif  // RPDSP_HYPERSAW_H
