@@ -29,6 +29,7 @@ compile_commands.json
 .vscode/
 .qoder/
 .kilo/
+AGENTS/
 *.swp
 *~
 
